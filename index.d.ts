@@ -1,3 +1,12 @@
-declare function hasOwn<O, K extends PropertyKey, V = unknown>(o: O, p: K): o is O & Record<K, V>;
+declare namespace SLOT {
+	type InternalSlot = string; // `[[${string}]]`; // TODO: restrict this to require the brackets
+}
 
-export = hasOwn;
+declare const SLOT: {
+	assert(O: object, slot: SLOT.InternalSlot): void;
+	get(O: object, slot: SLOT.InternalSlot): unknown;
+	set(O: object, slot: SLOT.InternalSlot, value?: unknown): void;
+	has(O: object, slot: SLOT.InternalSlot): boolean;
+}
+
+export = SLOT;
