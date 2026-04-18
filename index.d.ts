@@ -1,38 +1,66 @@
-// Note: named reexports are used instead of `export *` because
-// TypeScript itself doesn't resolve the `export *` when checking
-// if a particular helper exists.
-export {
-  __extends,
-  __assign,
-  __rest,
-  __decorate,
-  __param,
-  __esDecorate,
-  __runInitializers,
-  __propKey,
-  __setFunctionName,
-  __metadata,
-  __awaiter,
-  __generator,
-  __exportStar,
-  __values,
-  __read,
-  __spread,
-  __spreadArrays,
-  __spreadArray,
-  __await,
-  __asyncGenerator,
-  __asyncDelegator,
-  __asyncValues,
-  __makeTemplateObject,
-  __importStar,
-  __importDefault,
-  __classPrivateFieldGet,
-  __classPrivateFieldSet,
-  __classPrivateFieldIn,
-  __createBinding,
-  __addDisposableResource,
-  __disposeResources,
-  __rewriteRelativeImportExtension,
-} from '../tslib.js';
-export * as default from '../tslib.js';
+/**
+ * Determines the type of the given collection, or returns false.
+ *
+ * @param {unknown} value The potential collection
+ * @returns {TypedArrayName | false | null} 'Int8Array' | 'Uint8Array' | 'Uint8ClampedArray' | 'Int16Array' | 'Uint16Array' | 'Int32Array' | 'Uint32Array' | 'Float32Array' | 'Float64Array' | 'BigInt64Array' | 'BigUint64Array' | false | null
+ */
+declare function whichTypedArray(value: Int8Array): 'Int8Array';
+declare function whichTypedArray(value: Uint8Array): 'Uint8Array';
+declare function whichTypedArray(value: Uint8ClampedArray): 'Uint8ClampedArray';
+declare function whichTypedArray(value: Int16Array): 'Int16Array';
+declare function whichTypedArray(value: Uint16Array): 'Uint16Array';
+declare function whichTypedArray(value: Int32Array): 'Int32Array';
+declare function whichTypedArray(value: Uint32Array): 'Uint32Array';
+declare function whichTypedArray(value: Float32Array): 'Float32Array';
+declare function whichTypedArray(value: Float64Array): 'Float64Array';
+declare function whichTypedArray(value: Float16Array): 'Float16Array';
+declare function whichTypedArray(value: BigInt64Array): 'BigInt64Array';
+declare function whichTypedArray(value: BigUint64Array): 'BigUint64Array';
+declare function whichTypedArray(value: whichTypedArray.TypedArray): whichTypedArray.TypedArrayName;
+declare function whichTypedArray(value: unknown): false | null;
+
+declare namespace whichTypedArray {
+  export type TypedArrayName =
+    | 'Int8Array'
+    | 'Uint8Array'
+    | 'Uint8ClampedArray'
+    | 'Int16Array'
+    | 'Uint16Array'
+    | 'Int32Array'
+    | 'Uint32Array'
+    | 'Float32Array'
+    | 'Float64Array'
+    | 'Float16Array'
+    | 'BigInt64Array'
+    | 'BigUint64Array';
+
+  export type TypedArray =
+  	| Int8Array
+    | Uint8Array
+    | Uint8ClampedArray
+    | Int16Array
+    | Uint16Array
+    | Int32Array
+    | Uint32Array
+    | Float32Array
+    | Float64Array
+    | Float16Array
+    | BigInt64Array
+    | BigUint64Array;
+
+  export type TypedArrayConstructor =
+    | Int8ArrayConstructor
+    | Uint8ArrayConstructor
+    | Uint8ClampedArrayConstructor
+    | Int16ArrayConstructor
+    | Uint16ArrayConstructor
+    | Int32ArrayConstructor
+    | Uint32ArrayConstructor
+    | Float32ArrayConstructor
+    | Float64ArrayConstructor
+    | Float16ArrayConstructor
+    | BigInt64ArrayConstructor
+    | BigUint64ArrayConstructor;
+}
+
+export = whichTypedArray;

@@ -1,43 +1,70 @@
-# unpipe
+# which-typed-array <sup>[![Version Badge][npm-version-svg]][package-url]</sup>
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-[![Node.js Version][node-image]][node-url]
-[![Build Status][travis-image]][travis-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
+[![github actions][actions-image]][actions-url]
+[![coverage][codecov-image]][codecov-url]
+[![dependency status][deps-svg]][deps-url]
+[![dev dependency status][dev-deps-svg]][dev-deps-url]
+[![License][license-image]][license-url]
+[![Downloads][downloads-image]][downloads-url]
 
-Unpipe a stream from all destinations.
+[![npm badge][npm-badge-png]][package-url]
 
-## Installation
+Which kind of Typed Array is this JavaScript value? Works cross-realm, without `instanceof`, and despite Symbol.toStringTag.
 
-```sh
-$ npm install unpipe
-```
-
-## API
+## Example
 
 ```js
-var unpipe = require('unpipe')
+var whichTypedArray = require('which-typed-array');
+var assert = require('assert');
+
+assert.equal(false, whichTypedArray(undefined));
+assert.equal(false, whichTypedArray(null));
+assert.equal(false, whichTypedArray(false));
+assert.equal(false, whichTypedArray(true));
+assert.equal(false, whichTypedArray([]));
+assert.equal(false, whichTypedArray({}));
+assert.equal(false, whichTypedArray(/a/g));
+assert.equal(false, whichTypedArray(new RegExp('a', 'g')));
+assert.equal(false, whichTypedArray(new Date()));
+assert.equal(false, whichTypedArray(42));
+assert.equal(false, whichTypedArray(NaN));
+assert.equal(false, whichTypedArray(Infinity));
+assert.equal(false, whichTypedArray(new Number(42)));
+assert.equal(false, whichTypedArray('foo'));
+assert.equal(false, whichTypedArray(Object('foo')));
+assert.equal(false, whichTypedArray(function () {}));
+assert.equal(false, whichTypedArray(function* () {}));
+assert.equal(false, whichTypedArray(x => x * x));
+assert.equal(false, whichTypedArray([]));
+
+assert.equal('Int8Array', whichTypedArray(new Int8Array()));
+assert.equal('Uint8Array', whichTypedArray(new Uint8Array()));
+assert.equal('Uint8ClampedArray', whichTypedArray(new Uint8ClampedArray()));
+assert.equal('Int16Array', whichTypedArray(new Int16Array()));
+assert.equal('Uint16Array', whichTypedArray(new Uint16Array()));
+assert.equal('Int32Array', whichTypedArray(new Int32Array()));
+assert.equal('Uint32Array', whichTypedArray(new Uint32Array()));
+assert.equal('Float32Array', whichTypedArray(new Float32Array()));
+assert.equal('Float64Array', whichTypedArray(new Float64Array()));
+assert.equal('BigInt64Array', whichTypedArray(new BigInt64Array()));
+assert.equal('BigUint64Array', whichTypedArray(new BigUint64Array()));
 ```
 
-### unpipe(stream)
+## Tests
+Simply clone the repo, `npm install`, and run `npm test`
 
-Unpipes all destinations from a given stream. With stream 2+, this is
-equivalent to `stream.unpipe()`. When used with streams 1 style streams
-(typically Node.js 0.8 and below), this module attempts to undo the
-actions done in `stream.pipe(dest)`.
-
-## License
-
-[MIT](LICENSE)
-
-[npm-image]: https://img.shields.io/npm/v/unpipe.svg
-[npm-url]: https://npmjs.org/package/unpipe
-[node-image]: https://img.shields.io/node/v/unpipe.svg
-[node-url]: http://nodejs.org/download/
-[travis-image]: https://img.shields.io/travis/stream-utils/unpipe.svg
-[travis-url]: https://travis-ci.org/stream-utils/unpipe
-[coveralls-image]: https://img.shields.io/coveralls/stream-utils/unpipe.svg
-[coveralls-url]: https://coveralls.io/r/stream-utils/unpipe?branch=master
-[downloads-image]: https://img.shields.io/npm/dm/unpipe.svg
-[downloads-url]: https://npmjs.org/package/unpipe
+[package-url]: https://npmjs.org/package/which-typed-array
+[npm-version-svg]: https://versionbadg.es/inspect-js/which-typed-array.svg
+[deps-svg]: https://david-dm.org/inspect-js/which-typed-array.svg
+[deps-url]: https://david-dm.org/inspect-js/which-typed-array
+[dev-deps-svg]: https://david-dm.org/inspect-js/which-typed-array/dev-status.svg
+[dev-deps-url]: https://david-dm.org/inspect-js/which-typed-array#info=devDependencies
+[npm-badge-png]: https://nodei.co/npm/which-typed-array.png?downloads=true&stars=true
+[license-image]: https://img.shields.io/npm/l/which-typed-array.svg
+[license-url]: LICENSE
+[downloads-image]: https://img.shields.io/npm/dm/which-typed-array.svg
+[downloads-url]: https://npm-stat.com/charts.html?package=which-typed-array
+[codecov-image]: https://codecov.io/gh/inspect-js/which-typed-array/branch/main/graphs/badge.svg
+[codecov-url]: https://app.codecov.io/gh/inspect-js/which-typed-array/
+[actions-image]: https://img.shields.io/github/check-runs/inspect-js/which-typed-array/main
+[actions-url]: https://github.com/inspect-js/which-typed-array/actions
