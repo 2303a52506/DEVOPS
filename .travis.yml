@@ -1,16 +1,14 @@
-sudo: false
+
 language: node_js
 node_js:
-  - 6
-  - 8
+  - "6"
+  - "5"
+  - "4"
 
-before_install:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-
-addons:
-  firefox: "latest"
+install:
+  - make node_modules
 
 script:
-  - npm run lint
-  - npm test
+  - make lint
+  - make test
+  - make coveralls
