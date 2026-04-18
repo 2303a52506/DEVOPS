@@ -1,43 +1,24 @@
-# Array Flatten
+# browserify-zlib
 
-[![NPM version][npm-image]][npm-url]
-[![NPM downloads][downloads-image]][downloads-url]
-[![Build status][travis-image]][travis-url]
-[![Test coverage][coveralls-image]][coveralls-url]
+[![Travis CI](https://travis-ci.org/devongovett/browserify-zlib.svg?branch=master)](https://travis-ci.org/devongovett/browserify-zlib)
+[![Dependency Status](https://david-dm.org/devongovett/browserify-zlib.svg?style=flat-square)](https://david-dm.org/devongovett/browserify-zlib) [![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/feross/standard)
 
-> Flatten an array of nested arrays into a single flat array. Accepts an optional depth.
+## Description
 
-## Installation
+Emulates Node's [zlib](https://nodejs.org/api/zlib.html) module for the browser. Can be used as a drop in replacement with [Browserify](http://browserify.org) and [webpack](http://webpack.github.io/).
 
-```
-npm install array-flatten --save
-```
+The heavy lifting is done using [pako](https://github.com/nodeca/pako). The code in this module is modeled closely after the code in the source of Node core to get as much compatability as possible.
 
-## Usage
+## API
 
-```javascript
-var flatten = require('array-flatten')
+https://nodejs.org/api/zlib.html
 
-flatten([1, [2, [3, [4, [5], 6], 7], 8], 9])
-//=> [1, 2, 3, 4, 5, 6, 7, 8, 9]
+## Not implemented
 
-flatten([1, [2, [3, [4, [5], 6], 7], 8], 9], 2)
-//=> [1, 2, 3, [4, [5], 6], 7, 8, 9]
+The following options/methods are not supported because pako does not support them yet.
 
-(function () {
-  flatten(arguments) //=> [1, 2, 3]
-})(1, [2, 3])
-```
+* The `params` method
 
 ## License
 
 MIT
-
-[npm-image]: https://img.shields.io/npm/v/array-flatten.svg?style=flat
-[npm-url]: https://npmjs.org/package/array-flatten
-[downloads-image]: https://img.shields.io/npm/dm/array-flatten.svg?style=flat
-[downloads-url]: https://npmjs.org/package/array-flatten
-[travis-image]: https://img.shields.io/travis/blakeembrey/array-flatten.svg?style=flat
-[travis-url]: https://travis-ci.org/blakeembrey/array-flatten
-[coveralls-image]: https://img.shields.io/coveralls/blakeembrey/array-flatten.svg?style=flat
-[coveralls-url]: https://coveralls.io/r/blakeembrey/array-flatten?branch=master
