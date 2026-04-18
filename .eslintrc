@@ -3,10 +3,12 @@
 
 	"extends": "@ljharb",
 
+	"globals": {
+		"StopIteration": false,
+	},
+
 	"rules": {
+		"func-name-matching": [2, "always"],
 		"id-length": 0,
-		"max-lines-per-function": 0,
-		"multiline-comment-style": 1,
-		"new-cap": [2, { "capIsNewExceptions": ["GetIntrinsic"] }],
 	},
 }

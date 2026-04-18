@@ -1,61 +1,78 @@
-# object-assign [![Build Status](https://travis-ci.org/sindresorhus/object-assign.svg?branch=master)](https://travis-ci.org/sindresorhus/object-assign)
+# unicode-properties
 
-> ES2015 [`Object.assign()`](http://www.2ality.com/2014/01/object-assign.html) [ponyfill](https://ponyfill.com)
-
-
-## Use the built-in
-
-Node.js 4 and up, as well as every evergreen browser (Chrome, Edge, Firefox, Opera, Safari),
-support `Object.assign()` :tada:. If you target only those environments, then by all
-means, use `Object.assign()` instead of this package.
-
-
-## Install
-
-```
-$ npm install --save object-assign
-```
-
+Provides fast access to unicode character properties. Uses [unicode-trie](https://github.com/devongovett/unicode-trie) to compress the 
+properties for all code points into just 9.5KB. Currently, unicode-properties supports Unicode version 12.
 
 ## Usage
 
-```js
-const objectAssign = require('object-assign');
+    npm install unicode-properties
 
-objectAssign({foo: 0}, {bar: 1});
-//=> {foo: 0, bar: 1}
+```javascript
+var unicode = require('unicode-properties');
 
-// multiple sources
-objectAssign({foo: 0}, {bar: 1}, {baz: 2});
-//=> {foo: 0, bar: 1, baz: 2}
-
-// overwrites equal keys
-objectAssign({foo: 0}, {foo: 1}, {foo: 2});
-//=> {foo: 2}
-
-// ignores null and undefined sources
-objectAssign({foo: 0}, null, {bar: 1}, undefined);
-//=> {foo: 0, bar: 1}
+unicode.getCategory('2'.charCodeAt()) //=> 'Nd'
+unicode.getNumericValue('2'.charCodeAt()) //=> 2
 ```
-
 
 ## API
 
-### objectAssign(target, [source, ...])
+### getCategory(codePoint)
 
-Assigns enumerable own properties of `source` objects to the `target` object and returns the `target` object. Additional `source` objects will overwrite previous ones.
+Returns the unicode [general category](http://www.fileformat.info/info/unicode/category/index.htm) for the given code point.
 
+### getScript(codePoint)
 
-## Resources
+Returns the [script](http://unicode.org/standard/supported.html) for the given code point.
 
-- [ES2015 spec - Object.assign](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign)
+### getCombiningClass(codePoint)
 
+Returns the [canonical combining class](http://unicode.org/glossary/#combining_class) for the given code point.
 
-## Related
+### getEastAsianWidth(codePoint)
 
-- [deep-assign](https://github.com/sindresorhus/deep-assign) - Recursive `Object.assign()`
+Returns the [East Asian width](http://www.unicode.org/reports/tr11/tr11-28.html) for the given code point.
 
+### getNumericValue(codePoint)
+
+Returns the numeric value for the given code point, or null if there is no numeric value for that code point.
+
+### isAlphabetic(codePoint)
+
+Returns whether the code point is an alphabetic character.
+
+### isDigit(codePoint)
+
+Returns whether the code point is a digit.
+
+### isPunctuation(codePoint)
+
+Returns whether the code point is a punctuation character.
+
+### isLowerCase(codePoint)
+
+Returns whether the code point is lower case.
+
+### isUpperCase(codePoint)
+
+Returns whether the code point is upper case.
+
+### isTitleCase(codePoint)
+
+Returns whether the code point is title case.
+
+### isWhiteSpace(codePoint)
+
+Returns whether the code point is whitespace: specifically, whether the category is one of Zs, Zl, or Zp.
+
+### isBaseForm(codePoint)
+
+Returns whether the code point is a base form. A code point of base form does not graphically combine with preceding
+characters.
+
+### isMark(codePoint)
+
+Returns whether the code point is a mark character (e.g. accent).
 
 ## License
 
-MIT © [Sindre Sorhus](https://sindresorhus.com)
+MIT

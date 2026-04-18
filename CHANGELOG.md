@@ -1,28 +1,90 @@
-# Changelog
+1.0.2 / 2016-07-21
+------------------
 
-All notable changes to this project will be documented in this file.
+- Fixed nasty bug in deflate (wrong `d_buf` offset), which could cause
+  broken data in some rare cases.
+- Also released as 0.2.9 to give chance to old dependents, not updated to 1.x
+  version.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.0.2](https://github.com/ljharb/side-channel-weakmap/compare/v1.0.1...v1.0.2) - 2024-12-10
+1.0.1 / 2016-04-01
+------------------
 
-### Commits
+- Added dictionary support. Thanks to @dignifiedquire.
 
-- [types] fix generics ordering [`1b62e94`](https://github.com/ljharb/side-channel-weakmap/commit/1b62e94a2ad6ed30b640ba73c4a2535836c67289)
 
-## [v1.0.1](https://github.com/ljharb/side-channel-weakmap/compare/v1.0.0...v1.0.1) - 2024-12-10
+1.0.0 / 2016-02-17
+------------------
 
-### Commits
+- Maintenance release (semver, coding style).
 
-- [types] fix generics ordering [`08a4a5d`](https://github.com/ljharb/side-channel-weakmap/commit/08a4a5dbffedc3ebc79f1aaaf5a3dd6d2196dc1b)
-- [Deps] update `side-channel-map` [`b53fe44`](https://github.com/ljharb/side-channel-weakmap/commit/b53fe447dfdd3a9aebedfd015b384eac17fce916)
 
-## v1.0.0 - 2024-12-10
+0.2.8 / 2015-09-14
+------------------
 
-### Commits
+- Fixed regression after 0.2.4 for edge conditions in inflate wrapper (#65).
+  Added more tests to cover possible cases.
 
-- Initial implementation, tests, readme, types [`53c0fa4`](https://github.com/ljharb/side-channel-weakmap/commit/53c0fa4788435a006f58b9d7b43cb65989ecee49)
-- Initial commit [`a157947`](https://github.com/ljharb/side-channel-weakmap/commit/a157947f26fcaf2c4a941d3a044e76bf67343532)
-- npm init [`54dfc55`](https://github.com/ljharb/side-channel-weakmap/commit/54dfc55bafb16265910d5aad4e743c43aee5bbbb)
-- Only apps should have lockfiles [`0ddd6c7`](https://github.com/ljharb/side-channel-weakmap/commit/0ddd6c7b07fe8ee04d67b2e9f7255af7ce62c07d)
+
+0.2.7 / 2015-06-09
+------------------
+
+- Added Z_SYNC_FLUSH support. Thanks to @TinoLange.
+
+
+0.2.6 / 2015-03-24
+------------------
+
+- Allow ArrayBuffer input.
+
+
+0.2.5 / 2014-07-19
+------------------
+
+- Workaround for Chrome 38.0.2096.0 script parser bug, #30.
+
+
+0.2.4 / 2014-07-07
+------------------
+
+- Fixed bug in inflate wrapper, #29
+
+
+0.2.3 / 2014-06-09
+------------------
+
+- Maintenance release, dependencies update.
+
+
+0.2.2 / 2014-06-04
+------------------
+
+- Fixed iOS 5.1 Safary issue with `apply(typed_array)`, #26.
+
+
+0.2.1 / 2014-05-01
+------------------
+
+- Fixed collision on switch dynamic/fixed tables.
+
+
+0.2.0 / 2014-04-18
+------------------
+
+- Added custom gzip headers support.
+- Added strings support.
+- Improved memory allocations for small chunks.
+- ZStream properties rename/cleanup.
+- More coverage tests.
+
+
+0.1.1 / 2014-03-20
+------------------
+
+- Bugfixes for inflate/deflate.
+
+
+0.1.0 / 2014-03-15
+------------------
+
+- First release.

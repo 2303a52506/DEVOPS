@@ -1,47 +1,13 @@
-
-/**
- * The default built-in validator error messages. These may be customized.
- *
- *     // customize within each schema or globally like so
- *     const mongoose = require('mongoose');
- *     mongoose.Error.messages.String.enum  = "Your custom message for {PATH}.";
- *
- * Error messages support basic templating. Mongoose will replace the following strings with the corresponding value.
- *
- * - `{PATH}` is replaced with the invalid document path
- * - `{VALUE}` is replaced with the invalid value
- * - `{TYPE}` is replaced with the validator type such as "regexp", "min", or "user defined"
- * - `{MIN}` is replaced with the declared min value for the Number.min validator
- * - `{MAX}` is replaced with the declared max value for the Number.max validator
- *
- * Click the "show code" link below to see all defaults.
- *
- * @static
- * @memberOf MongooseError
- * @api public
- */
-
 'use strict';
 
-const msg = module.exports = exports = {};
-
-msg.DocumentNotFoundError = null;
-
-msg.general = {};
-msg.general.default = 'Validator failed for path `{PATH}` with value `{VALUE}`';
-msg.general.required = 'Path `{PATH}` is required.';
-
-msg.Number = {};
-msg.Number.min = 'Path `{PATH}` ({VALUE}) is less than minimum allowed value ({MIN}).';
-msg.Number.max = 'Path `{PATH}` ({VALUE}) is more than maximum allowed value ({MAX}).';
-msg.Number.enum = '`{VALUE}` is not a valid enum value for path `{PATH}`.';
-
-msg.Date = {};
-msg.Date.min = 'Path `{PATH}` ({VALUE}) is before minimum allowed value ({MIN}).';
-msg.Date.max = 'Path `{PATH}` ({VALUE}) is after maximum allowed value ({MAX}).';
-
-msg.String = {};
-msg.String.enum = '`{VALUE}` is not a valid enum value for path `{PATH}`.';
-msg.String.match = 'Path `{PATH}` is invalid ({VALUE}).';
-msg.String.minlength = 'Path `{PATH}` (`{VALUE}`, length {LENGTH}) is shorter than the minimum allowed length ({MINLENGTH}).';
-msg.String.maxlength = 'Path `{PATH}` (`{VALUE}`, length {LENGTH}) is longer than the maximum allowed length ({MAXLENGTH}).';
+module.exports = {
+  2:      'need dictionary',     /* Z_NEED_DICT       2  */
+  1:      'stream end',          /* Z_STREAM_END      1  */
+  0:      '',                    /* Z_OK              0  */
+  '-1':   'file error',          /* Z_ERRNO         (-1) */
+  '-2':   'stream error',        /* Z_STREAM_ERROR  (-2) */
+  '-3':   'data error',          /* Z_DATA_ERROR    (-3) */
+  '-4':   'insufficient memory', /* Z_MEM_ERROR     (-4) */
+  '-5':   'buffer error',        /* Z_BUF_ERROR     (-5) */
+  '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
+};

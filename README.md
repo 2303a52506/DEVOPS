@@ -1,62 +1,43 @@
-# sparse-bitfield
+# unpipe
 
-Bitfield implementation that allocates a series of 1kb buffers to support sparse bitfields
-without allocating a massive buffer. If you want to simple implementation of a flat bitfield
-see the [bitfield](https://github.com/fb55/bitfield) module.
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Node.js Version][node-image]][node-url]
+[![Build Status][travis-image]][travis-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-This module is mostly useful if you need a big bitfield where you won't nessecarily set every bit.
+Unpipe a stream from all destinations.
 
+## Installation
+
+```sh
+$ npm install unpipe
 ```
-npm install sparse-bitfield
-```
-
-[![build status](http://img.shields.io/travis/mafintosh/sparse-bitfield.svg?style=flat)](http://travis-ci.org/mafintosh/sparse-bitfield)
-
-## Usage
-
-``` js
-var bitfield = require('sparse-bitfield')
-var bits = bitfield()
-
-bits.set(0, true) // set first bit
-bits.set(1, true) // set second bit
-bits.set(1000000000000, true) // set the 1.000.000.000.000th bit
-```
-
-Running the above example will allocate two 1kb buffers internally.
-Each 1kb buffer can hold information about 8192 bits so the first one will be used to store information about the first two bits and the second will be used to store the 1.000.000.000.000th bit.
 
 ## API
 
-#### `var bits = bitfield([options])`
-
-Create a new bitfield. Options include
-
-``` js
-{
-  pageSize: 1024, // how big should the partial buffers be
-  buffer: anExistingBitfield,
-  trackUpdates: false // track when pages are being updated in the pager
-}
+```js
+var unpipe = require('unpipe')
 ```
 
-#### `bits.set(index, value)`
+### unpipe(stream)
 
-Set a bit to true or false.
-
-#### `bits.get(index)`
-
-Get the value of a bit.
-
-#### `bits.pages`
-
-A [memory-pager](https://github.com/mafintosh/memory-pager) instance that is managing the underlying memory.
-If you set `trackUpdates` to true in the constructor you can use `.lastUpdate()` on this instance to get the last updated memory page.
-
-#### `var buffer = bits.toBuffer()`
-
-Get a single buffer representing the entire bitfield.
+Unpipes all destinations from a given stream. With stream 2+, this is
+equivalent to `stream.unpipe()`. When used with streams 1 style streams
+(typically Node.js 0.8 and below), this module attempts to undo the
+actions done in `stream.pipe(dest)`.
 
 ## License
 
-MIT
+[MIT](LICENSE)
+
+[npm-image]: https://img.shields.io/npm/v/unpipe.svg
+[npm-url]: https://npmjs.org/package/unpipe
+[node-image]: https://img.shields.io/node/v/unpipe.svg
+[node-url]: http://nodejs.org/download/
+[travis-image]: https://img.shields.io/travis/stream-utils/unpipe.svg
+[travis-url]: https://travis-ci.org/stream-utils/unpipe
+[coveralls-image]: https://img.shields.io/coveralls/stream-utils/unpipe.svg
+[coveralls-url]: https://coveralls.io/r/stream-utils/unpipe?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/unpipe.svg
+[downloads-url]: https://npmjs.org/package/unpipe
