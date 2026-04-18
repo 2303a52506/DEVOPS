@@ -1,19 +1,39 @@
 'use strict';
 
-var numberIsNaN = function (value) {
-	return value !== value;
-};
+var setFunctionName = require('set-function-name');
+var $TypeError = require('es-errors/type');
 
-module.exports = function is(a, b) {
-	if (a === 0 && b === 0) {
-		return 1 / a === 1 / b;
+var $Object = Object;
+
+module.exports = setFunctionName(function flags() {
+	if (this == null || this !== $Object(this)) {
+		throw new $TypeError('RegExp.prototype.flags getter called on non-object');
 	}
-	if (a === b) {
-		return true;
+	var result = '';
+	if (this.hasIndices) {
+		result += 'd';
 	}
-	if (numberIsNaN(a) && numberIsNaN(b)) {
-		return true;
+	if (this.global) {
+		result += 'g';
 	}
-	return false;
-};
+	if (this.ignoreCase) {
+		result += 'i';
+	}
+	if (this.multiline) {
+		result += 'm';
+	}
+	if (this.dotAll) {
+		result += 's';
+	}
+	if (this.unicode) {
+		result += 'u';
+	}
+	if (this.unicodeSets) {
+		result += 'v';
+	}
+	if (this.sticky) {
+		result += 'y';
+	}
+	return result;
+}, 'get flags', true);
 

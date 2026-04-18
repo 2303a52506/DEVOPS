@@ -1,7 +1,5 @@
 'use strict';
 
-require('../auto');
-
 var test = require('tape');
 var defineProperties = require('define-properties');
 var callBind = require('call-bind');
@@ -13,7 +11,7 @@ var hasStrictMode = require('has-strict-mode')();
 
 var runTests = require('./tests');
 
-test('shimmed', function (t) {
+test('builtin', function (t) {
 	var descriptor = Object.getOwnPropertyDescriptor(RegExp.prototype, 'flags');
 
 	t.equal(descriptor.get.length, 0, 'RegExp#flags getter has a length of 0');
