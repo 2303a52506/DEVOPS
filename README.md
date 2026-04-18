@@ -1,278 +1,136 @@
-#mpath
+# object.assign <sup>[![Version Badge][npm-version-svg]][npm-url]</sup>
 
-{G,S}et javascript object values using MongoDB-like path notation.
+[![github actions][actions-image]][actions-url]
+[![coverage][codecov-image]][codecov-url]
+[![dependency status][deps-svg]][deps-url]
+[![dev dependency status][dev-deps-svg]][dev-deps-url]
+[![License][license-image]][license-url]
+[![Downloads][downloads-image]][downloads-url]
 
-###Getting
+[![npm badge][npm-badge-png]][npm-url]
 
+An Object.assign shim. Invoke its "shim" method to shim Object.assign if it is unavailable.
+
+This package implements the [es-shim API](https://github.com/es-shims/api) interface. It works in an ES3-supported environment and complies with the [spec](http://www.ecma-international.org/ecma-262/6.0/#sec-object.assign). In an ES6 environment, it will also work properly with `Symbol`s.
+
+Takes a minimum of 2 arguments: `target` and `source`.
+Takes a variable sized list of source arguments - at least 1, as many as you want.
+Throws a TypeError if the `target` argument is `null` or `undefined`.
+
+Most common usage:
 ```js
-var mpath = require('mpath');
-
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
-
-mpath.get('comments.1.title', obj) // 'exciting!'
+var assign = require('object.assign').getPolyfill(); // returns native method if compliant
+	/* or */
+var assign = require('object.assign/polyfill')(); // returns native method if compliant
 ```
 
-`mpath.get` supports array property notation as well.
+## Example
 
 ```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
+var assert = require('assert');
 
-mpath.get('comments.title', obj) // ['funny', 'exciting!']
+// Multiple sources!
+var target = { a: true };
+var source1 = { b: true };
+var source2 = { c: true };
+var sourceN = { n: true };
+
+var expected = {
+	a: true,
+	b: true,
+	c: true,
+	n: true
+};
+
+assign(target, source1, source2, sourceN);
+assert.deepEqual(target, expected); // AWESOME!
 ```
 
-Array property and indexing syntax, when used together, are very powerful.
-
 ```js
-var obj = {
-  array: [
-      { o: { array: [{x: {b: [4,6,8]}}, { y: 10} ] }}
-    , { o: { array: [{x: {b: [1,2,3]}}, { x: {z: 10 }}, { x: 'Turkey Day' }] }}
-    , { o: { array: [{x: {b: null }}, { x: { b: [null, 1]}}] }}
-    , { o: { array: [{x: null }] }}
-    , { o: { array: [{y: 3 }] }}
-    , { o: { array: [3, 0, null] }}
-    , { o: { name: 'ha' }}
-  ];
-}
+var target = {
+	a: true,
+	b: true,
+	c: true
+};
+var source1 = {
+	c: false,
+	d: false
+};
+var sourceN = {
+	e: false
+};
 
-var found = mpath.get('array.o.array.x.b.1', obj);
-
-console.log(found); // prints..
-
-    [ [6, undefined]
-    , [2, undefined, undefined]
-    , [null, 1]
-    , [null]
-    , [undefined]
-    , [undefined, undefined, undefined]
-    , undefined
-    ]
-
-```
-
-#####Field selection rules:
-
-The following rules are iteratively applied to each `segment` in the passed `path`. For example:
-
-```js
-var path = 'one.two.14'; // path
-'one' // segment 0
-'two' // segment 1
-14    // segment 2
-```
-
-- 1) when value of the segment parent is not an array, return the value of `parent.segment`
-- 2) when value of the segment parent is an array
-  - a) if the segment is an integer, replace the parent array with the value at `parent[segment]`
-  - b) if not an integer, keep the array but replace each array `item` with the value returned from calling `get(remainingSegments, item)` or undefined if falsey.
-
-#####Maps
-
-`mpath.get` also accepts an optional `map` argument which receives each individual found value. The value returned from the `map` function will be used in the original found values place.
-
-```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
-
-mpath.get('comments.title', obj, function (val) {
-  return 'funny' == val
-    ? 'amusing'
-    : val;
+var assigned = assign(target, source1, sourceN);
+assert.equal(target, assigned); // returns the target object
+assert.deepEqual(assigned, {
+	a: true,
+	b: true,
+	c: false,
+	d: false,
+	e: false
 });
-// ['amusing', 'exciting!']
 ```
-
-###Setting
 
 ```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
+/* when Object.assign is not present */
+delete Object.assign;
+var shimmedAssign = require('object.assign').shim();
+	/* or */
+var shimmedAssign = require('object.assign/shim')();
 
-mpath.set('comments.1.title', 'hilarious', obj)
-console.log(obj.comments[1].title) // 'hilarious'
+assert.equal(shimmedAssign, assign);
+
+var target = {
+	a: true,
+	b: true,
+	c: true
+};
+var source = {
+	c: false,
+	d: false,
+	e: false
+};
+
+var assigned = assign(target, source);
+assert.deepEqual(Object.assign(target, source), assign(target, source));
 ```
-
-`mpath.set` supports the same array property notation as `mpath.get`.
 
 ```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
+/* when Object.assign is present */
+var shimmedAssign = require('object.assign').shim();
+assert.equal(shimmedAssign, Object.assign);
 
-mpath.set('comments.title', ['hilarious', 'fruity'], obj);
+var target = {
+	a: true,
+	b: true,
+	c: true
+};
+var source = {
+	c: false,
+	d: false,
+	e: false
+};
 
-console.log(obj); // prints..
-
-  { comments: [
-      { title: 'hilarious' },
-      { title: 'fruity' }
-  ]}
+assert.deepEqual(Object.assign(target, source), assign(target, source));
 ```
 
-Array property and indexing syntax can be used together also when setting.
+## Tests
+Simply clone the repo, `npm install`, and run `npm test`
 
-```js
-var obj = {
-  array: [
-      { o: { array: [{x: {b: [4,6,8]}}, { y: 10} ] }}
-    , { o: { array: [{x: {b: [1,2,3]}}, { x: {z: 10 }}, { x: 'Turkey Day' }] }}
-    , { o: { array: [{x: {b: null }}, { x: { b: [null, 1]}}] }}
-    , { o: { array: [{x: null }] }}
-    , { o: { array: [{y: 3 }] }}
-    , { o: { array: [3, 0, null] }}
-    , { o: { name: 'ha' }}
-  ]
-}
-
-mpath.set('array.1.o', 'this was changed', obj);
-
-console.log(require('util').inspect(obj, false, 1000)); // prints..
-
-{
-  array: [
-      { o: { array: [{x: {b: [4,6,8]}}, { y: 10} ] }}
-    , { o: 'this was changed' }
-    , { o: { array: [{x: {b: null }}, { x: { b: [null, 1]}}] }}
-    , { o: { array: [{x: null }] }}
-    , { o: { array: [{y: 3 }] }}
-    , { o: { array: [3, 0, null] }}
-    , { o: { name: 'ha' }}
-  ];
-}
-
-mpath.set('array.o.array.x', 'this was changed too', obj);
-
-console.log(require('util').inspect(obj, false, 1000)); // prints..
-
-{
-  array: [
-      { o: { array: [{x: 'this was changed too'}, { y: 10, x: 'this was changed too'} ] }}
-    , { o: 'this was changed' }
-    , { o: { array: [{x: 'this was changed too'}, { x: 'this was changed too'}] }}
-    , { o: { array: [{x: 'this was changed too'}] }}
-    , { o: { array: [{x: 'this was changed too', y: 3 }] }}
-    , { o: { array: [3, 0, null] }}
-    , { o: { name: 'ha' }}
-  ];
-}
-```
-
-####Setting arrays
-
-By default, setting a property within an array to another array results in each element of the new array being set to the item in the destination array at the matching index. An example is helpful.
-
-```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
-
-mpath.set('comments.title', ['hilarious', 'fruity'], obj);
-
-console.log(obj); // prints..
-
-  { comments: [
-      { title: 'hilarious' },
-      { title: 'fruity' }
-  ]}
-```
-
-If we do not desire this destructuring-like assignment behavior we may instead specify the `$` operator in the path being set to force the array to be copied directly.
-
-```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
-
-mpath.set('comments.$.title', ['hilarious', 'fruity'], obj);
-
-console.log(obj); // prints..
-
-  { comments: [
-      { title: ['hilarious', 'fruity'] },
-      { title: ['hilarious', 'fruity'] }
-  ]}
-```
-
-####Field assignment rules
-
-The rules utilized mirror those used on `mpath.get`, meaning we can take values returned from `mpath.get`, update them, and reassign them using `mpath.set`. Note that setting nested arrays of arrays can get unweildy quickly. Check out the [tests](https://github.com/aheckmann/mpath/blob/master/test/index.js) for more extreme examples.
-
-#####Maps
-
-`mpath.set` also accepts an optional `map` argument which receives each individual value being set. The value returned from the `map` function will be used in the original values place.
-
-```js
-var obj = {
-    comments: [
-      { title: 'funny' },
-      { title: 'exciting!' }
-    ]
-}
-
-mpath.set('comments.title', ['hilarious', 'fruity'], obj, function (val) {
-  return val.length;
-});
-
-console.log(obj); // prints..
-
-  { comments: [
-      { title: 9 },
-      { title: 6 }
-  ]}
-```
-
-### Custom object types
-
-Sometimes you may want to enact the same functionality on custom object types that store all their real data internally, say for an ODM type object. No fear, `mpath` has you covered. Simply pass the name of the property being used to store the internal data and it will be traversed instead:
-
-```js
-var mpath = require('mpath');
-
-var obj = {
-    comments: [
-      { title: 'exciting!', _doc: { title: 'great!' }}
-    ]
-}
-
-mpath.get('comments.0.title', obj, '_doc')            // 'great!'
-mpath.set('comments.0.title', 'nov 3rd', obj, '_doc')
-mpath.get('comments.0.title', obj, '_doc')            // 'nov 3rd'
-mpath.get('comments.0.title', obj)                    // 'exciting'
-```
-
-When used with a `map`, the `map` argument comes last.
-
-```js
-mpath.get(path, obj, '_doc', map);
-mpath.set(path, val, obj, '_doc', map);
-```
-
-[LICENSE](https://github.com/aheckmann/mpath/blob/master/LICENSE)
-
+[npm-url]: https://npmjs.org/package/object.assign
+[npm-version-svg]: http://versionbadg.es/ljharb/object.assign.svg
+[travis-svg]: https://travis-ci.org/ljharb/object.assign.svg
+[travis-url]: https://travis-ci.org/ljharb/object.assign
+[deps-svg]: https://david-dm.org/ljharb/object.assign.svg?theme=shields.io
+[deps-url]: https://david-dm.org/ljharb/object.assign
+[dev-deps-svg]: https://david-dm.org/ljharb/object.assign/dev-status.svg?theme=shields.io
+[dev-deps-url]: https://david-dm.org/ljharb/object.assign#info=devDependencies
+[npm-badge-png]: https://nodei.co/npm/object.assign.png?downloads=true&stars=true
+[license-image]: http://img.shields.io/npm/l/object.assign.svg
+[license-url]: LICENSE
+[downloads-image]: http://img.shields.io/npm/dm/object.assign.svg
+[downloads-url]: http://npm-stat.com/charts.html?package=object.assign
+[codecov-image]: https://codecov.io/gh/ljharb/object.assign/branch/main/graphs/badge.svg
+[codecov-url]: https://app.codecov.io/gh/ljharb/object.assign/
+[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/ljharb/object.assign
+[actions-url]: https://github.com/ljharb/object.assign/actions

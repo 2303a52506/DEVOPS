@@ -1,61 +1,61 @@
-# Brotli.js
+# object-assign [![Build Status](https://travis-ci.org/sindresorhus/object-assign.svg?branch=master)](https://travis-ci.org/sindresorhus/object-assign)
 
-Brotli.js is port of the [Brotli](http://tools.ietf.org/html/draft-alakuijala-brotli-01) compression algorithm (as used in the [WOFF2](http://www.w3.org/TR/WOFF2/) font format) to JavaScript. The decompressor is hand ported, and the compressor is ported
-with Emscripten.  The original C++ source code can be found [here](http://github.com/google/brotli).
+> ES2015 [`Object.assign()`](http://www.2ality.com/2014/01/object-assign.html) [ponyfill](https://ponyfill.com)
 
-## Installation and usage
 
-Install using npm.
+## Use the built-in
 
-    npm install brotli
+Node.js 4 and up, as well as every evergreen browser (Chrome, Edge, Firefox, Opera, Safari),
+support `Object.assign()` :tada:. If you target only those environments, then by all
+means, use `Object.assign()` instead of this package.
 
-If you want to use brotli in the browser, you should use [Browserify](http://browserify.org/) to build it.
 
-In node, or in browserify, you can load brotli in the standard way:
+## Install
 
-```javascript
-var brotli = require('brotli');
+```
+$ npm install --save object-assign
 ```
 
-You can also require just the `decompress` function or just the `compress` function, which is useful for browserify builds.
-For example, here's how you'd require just the `decompress` function.
 
-```javascript
-var decompress = require('brotli/decompress');
+## Usage
+
+```js
+const objectAssign = require('object-assign');
+
+objectAssign({foo: 0}, {bar: 1});
+//=> {foo: 0, bar: 1}
+
+// multiple sources
+objectAssign({foo: 0}, {bar: 1}, {baz: 2});
+//=> {foo: 0, bar: 1, baz: 2}
+
+// overwrites equal keys
+objectAssign({foo: 0}, {foo: 1}, {foo: 2});
+//=> {foo: 2}
+
+// ignores null and undefined sources
+objectAssign({foo: 0}, null, {bar: 1}, undefined);
+//=> {foo: 0, bar: 1}
 ```
+
 
 ## API
 
-### brotli.decompress(buffer, [outSize])
+### objectAssign(target, [source, ...])
 
-Decompresses the given buffer to produce the original input to the compressor.
-The `outSize` parameter is optional, and will be computed by the decompressor
-if not provided. Inside a WOFF2 file, this can be computed from the WOFF2 directory.
+Assigns enumerable own properties of `source` objects to the `target` object and returns the `target` object. Additional `source` objects will overwrite previous ones.
 
-```javascript
-// decode a buffer where the output size is known
-brotli.decompress(compressedData, uncompressedLength);
 
-// decode a buffer where the output size is not known
-brotli.decompress(fs.readFileSync('compressed.bin'));
-```
+## Resources
 
-### brotli.compress(buffer, isText = false)
+- [ES2015 spec - Object.assign](https://people.mozilla.org/~jorendorff/es6-draft.html#sec-object.assign)
 
-Compresses the given buffer. Pass optional parameters as the second argument.
 
-```javascript
-// encode a buffer of binary data
-brotli.compress(fs.readFileSync('myfile.bin'));
+## Related
 
-// encode some data with options (default options shown)
-brotli.compress(fs.readFileSync('myfile.bin'), {
-  mode: 0, // 0 = generic, 1 = text, 2 = font (WOFF2)
-  quality: 11, // 0 - 11
-  lgwin: 22 // window size
-});
-```
+- [deep-assign](https://github.com/sindresorhus/deep-assign) - Recursive `Object.assign()`
+
 
 ## License
 
-MIT
+MIT © [Sindre Sorhus](https://sindresorhus.com)

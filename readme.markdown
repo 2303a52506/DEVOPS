@@ -1,8 +1,6 @@
-# deep-equal <sup>[![Version Badge][npm-version-svg]][package-url]</sup>
+# object-inspect <sup>[![Version Badge][npm-version-svg]][package-url]</sup>
 
-Node's `assert.deepEqual() algorithm` as a standalone module, that also works in browser environments.
-
-It mirrors the robustness of node's own `assert.deepEqual` and is robust against later builtin modification.
+string representations of objects in node and the browser
 
 [![github actions][actions-image]][actions-url]
 [![coverage][codecov-image]][codecov-url]
@@ -13,61 +11,74 @@ It mirrors the robustness of node's own `assert.deepEqual` and is robust against
 
 # example
 
+## circular
+
 ``` js
-var equal = require('deep-equal');
-console.dir([
-    equal(
-        { a : [ 2, 3 ], b : [ 4 ] },
-        { a : [ 2, 3 ], b : [ 4 ] }
-    ),
-    equal(
-        { x : 5, y : [6] },
-        { x : 5, y : 6 }
-    )
-]);
+var inspect = require('object-inspect');
+var obj = { a: 1, b: [3,4] };
+obj.c = obj;
+console.log(inspect(obj));
+```
+
+## dom element
+
+``` js
+var inspect = require('object-inspect');
+
+var d = document.createElement('div');
+d.setAttribute('id', 'beep');
+d.innerHTML = '<b>wooo</b><i>iiiii</i>';
+
+console.log(inspect([ d, { a: 3, b : 4, c: [5,6,[7,[8,[9]]]] } ]));
+```
+
+output:
+
+```
+[ <div id="beep">...</div>, { a: 3, b: 4, c: [ 5, 6, [ 7, [ 8, [ ... ] ] ] ] } ]
 ```
 
 # methods
 
 ``` js
-var deepEqual = require('deep-equal')
+var inspect = require('object-inspect')
 ```
 
-## deepEqual(a, b, opts)
+## var s = inspect(obj, opts={})
 
-Compare objects `a` and `b`, returning whether they are equal according to a recursive equality algorithm.
+Return a string `s` with the string representation of `obj` up to a depth of `opts.depth`.
 
-If `opts.strict` is `true`, use strict equality (`===`) to compare leaf nodes.
-The default is to use coercive equality (`==`) because that's how `assert.deepEqual()` works by default.
+Additional options:
+  - `quoteStyle`: must be "single" or "double", if present. Default `'single'` for strings, `'double'` for HTML elements.
+  - `maxStringLength`: must be `0`, a positive integer, `Infinity`, or `null`, if present. Default `Infinity`.
+  - `customInspect`: When `true`, a custom inspect method function will be invoked (either undere the `util.inspect.custom` symbol, or the `inspect` property). When the string `'symbol'`, only the symbol method will be invoked. Default `true`.
+  - `indent`: must be "\t", `null`, or a positive integer. Default `null`.
+  - `numericSeparator`: must be a boolean, if present. Default `false`. If `true`, all numbers will be printed with numeric separators (eg, `1234.5678` will be printed as `'1_234.567_8'`)
 
 # install
 
 With [npm](https://npmjs.org) do:
 
 ```
-npm install deep-equal
+npm install object-inspect
 ```
 
-# test
+# license
 
-With [npm](https://npmjs.org) do:
+MIT
 
-```
-npm test
-```
-
-[package-url]: https://npmjs.org/package/deep-equal
-[npm-version-svg]: https://versionbadg.es/inspect-js/deep-equal.svg
-[deps-svg]: https://david-dm.org/inspect-js/node-deep-equal.svg
-[deps-url]: https://david-dm.org/inspect-js/node-deep-equal
-[dev-deps-svg]: https://david-dm.org/inspect-js/node-deep-equal/dev-status.svg
-[dev-deps-url]: https://david-dm.org/inspect-js/node-deep-equal#info=devDependencies
-[npm-badge-png]: https://nodei.co/npm/deep-equal.png?downloads=true&stars=true
-[license-image]: https://img.shields.io/npm/l/deep-equal.svg
+[package-url]: https://npmjs.org/package/object-inspect
+[npm-version-svg]: https://versionbadg.es/inspect-js/object-inspect.svg
+[deps-svg]: https://david-dm.org/inspect-js/object-inspect.svg
+[deps-url]: https://david-dm.org/inspect-js/object-inspect
+[dev-deps-svg]: https://david-dm.org/inspect-js/object-inspect/dev-status.svg
+[dev-deps-url]: https://david-dm.org/inspect-js/object-inspect#info=devDependencies
+[npm-badge-png]: https://nodei.co/npm/object-inspect.png?downloads=true&stars=true
+[license-image]: https://img.shields.io/npm/l/object-inspect.svg
 [license-url]: LICENSE
-[downloads-image]: https://img.shields.io/npm/dm/deep-equal.svg
-[downloads-url]: https://npm-stat.com/charts.html?package=deep-equal
-[codecov-image]: https://codecov.io/gh/inspect-js/node-deep-equal/branch/main/graphs/badge.svg
-[codecov-url]: https://app.codecov.io/gh/inspect-js/node-deep-equal/
-[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/inspect-js/node-deep-equal
-[actions-url]: https://github.com/inspect-js/node-deep-equal/actions
+[downloads-image]: https://img.shields.io/npm/dm/object-inspect.svg
+[downloads-url]: https://npm-stat.com/charts.html?package=object-inspect
+[codecov-image]: https://codecov.io/gh/inspect-js/object-inspect/branch/main/graphs/badge.svg
+[codecov-url]: https://app.codecov.io/gh/inspect-js/object-inspect/
+[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/inspect-js/object-inspect
+[actions-url]: https://github.com/inspect-js/object-inspect/actions
