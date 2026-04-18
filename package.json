@@ -1,71 +1,144 @@
 {
-  "name": "mongodb-connection-string-url",
-  "version": "7.0.1",
-  "description": "MongoDB connection strings, based on the WhatWG URL API",
-  "keywords": [
-    "password",
-    "prompt",
-    "tty"
-  ],
-  "homepage": "https://github.com/mongodb-js/mongodb-connection-string-url",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mongodb-js/mongodb-connection-string-url.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mongodb-js/mongodb-connection-string-url/issues"
-  },
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "exports": {
-    "require": {
-      "default": "./lib/index.js",
-      "types": "./lib/index.d.ts"
-    },
-    "import": {
-      "default": "./.esm-wrapper.mjs",
-      "types": "./lib/index.d.ts"
-    }
-  },
-  "files": [
-    "LICENSE",
-    "lib",
-    "package.json",
-    "README.md",
-    ".esm-wrapper.mjs"
-  ],
+  "name": "mpath",
+  "version": "0.9.0",
+  "description": "{G,S}et object values using MongoDB-like path notation",
+  "main": "index.js",
   "scripts": {
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"{src,test}/**/*.ts\"",
-    "test": "npm run build && nyc mocha --colors -r ts-node/register test/*.ts",
-    "build": "npm run compile-ts && gen-esm-wrapper . ./.esm-wrapper.mjs",
-    "prepack": "npm run build",
-    "compile-ts": "tsc -p tsconfig.json"
-  },
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@types/chai": "^5.0.1",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^22.9.0",
-    "@typescript-eslint/eslint-plugin": "^8.39.1",
-    "@typescript-eslint/parser": "^8.39.1",
-    "chai": "^4.2.0",
-    "eslint": "^9.33.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-promise": "^7.1.0",
-    "gen-esm-wrapper": "^1.1.3",
-    "mocha": "^11.0.1",
-    "nyc": "^17.1.0",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "@types/whatwg-url": "^13.0.0",
-    "whatwg-url": "^14.1.0"
+    "lint": "eslint .",
+    "test": "mocha test/*"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=4.0.0"
+  },
+  "repository": "git://github.com/aheckmann/mpath.git",
+  "keywords": [
+    "mongodb",
+    "path",
+    "get",
+    "set"
+  ],
+  "author": "Aaron Heckmann <aaron.heckmann+github@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "5.x",
+    "benchmark": "~1.0.0",
+    "eslint": "7.16.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "ecmaVersion": 2015
+    },
+    "env": {
+      "node": true,
+      "es6": true
+    },
+    "rules": {
+      "comma-style": "error",
+      "indent": [
+        "error",
+        2,
+        {
+          "SwitchCase": 1,
+          "VariableDeclarator": 2
+        }
+      ],
+      "keyword-spacing": "error",
+      "no-whitespace-before-property": "error",
+      "no-buffer-constructor": "warn",
+      "no-console": "off",
+      "no-multi-spaces": "error",
+      "no-constant-condition": "off",
+      "func-call-spacing": "error",
+      "no-trailing-spaces": "error",
+      "no-undef": "error",
+      "no-unneeded-ternary": "error",
+      "no-const-assign": "error",
+      "no-useless-rename": "error",
+      "no-dupe-keys": "error",
+      "space-in-parens": [
+        "error",
+        "never"
+      ],
+      "spaced-comment": [
+        "error",
+        "always",
+        {
+          "block": {
+            "markers": [
+              "!"
+            ],
+            "balanced": true
+          }
+        }
+      ],
+      "key-spacing": [
+        "error",
+        {
+          "beforeColon": false,
+          "afterColon": true
+        }
+      ],
+      "comma-spacing": [
+        "error",
+        {
+          "before": false,
+          "after": true
+        }
+      ],
+      "array-bracket-spacing": 1,
+      "arrow-spacing": [
+        "error",
+        {
+          "before": true,
+          "after": true
+        }
+      ],
+      "object-curly-spacing": [
+        "error",
+        "always"
+      ],
+      "comma-dangle": [
+        "error",
+        "never"
+      ],
+      "no-unreachable": "error",
+      "quotes": [
+        "error",
+        "single"
+      ],
+      "quote-props": [
+        "error",
+        "as-needed"
+      ],
+      "semi": "error",
+      "no-extra-semi": "error",
+      "semi-spacing": "error",
+      "no-spaced-func": "error",
+      "no-throw-literal": "error",
+      "space-before-blocks": "error",
+      "space-before-function-paren": [
+        "error",
+        "never"
+      ],
+      "space-infix-ops": "error",
+      "space-unary-ops": "error",
+      "no-var": "warn",
+      "prefer-const": "warn",
+      "strict": [
+        "error",
+        "global"
+      ],
+      "no-restricted-globals": [
+        "error",
+        {
+          "name": "context",
+          "message": "Don't use Mocha's global context"
+        }
+      ],
+      "no-prototype-builtins": "off"
+    }
   }
 }

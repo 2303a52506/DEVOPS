@@ -1,13 +1,17 @@
-
-/*!
- * [node-mongodb-native](https://github.com/mongodb/node-mongodb-native) ObjectId
- * @constructor NodeMongoDbObjectId
- * @see ObjectId
+/**
+ * ObjectId type constructor
+ *
+ * #### Example:
+ *
+ *     const id = new mongoose.Types.ObjectId;
+ *
+ * @constructor ObjectId
  */
 
 'use strict';
 
-const ObjectId = require('bson').ObjectID;
+const ObjectId = require('bson').ObjectId;
+const objectIdSymbol = require('../helpers/symbols').objectIdSymbol;
 
 /**
  * Getter for convenience with populate, see gh-6115
@@ -23,7 +27,15 @@ Object.defineProperty(ObjectId.prototype, '_id', {
 });
 
 /*!
- * ignore
+ * Convenience `valueOf()` to allow comparing ObjectIds using double equals re: gh-7299
  */
 
-module.exports = exports = ObjectId;
+if (!Object.hasOwn(ObjectId.prototype, 'valueOf')) {
+  ObjectId.prototype.valueOf = function objectIdValueOf() {
+    return this.toString();
+  };
+}
+
+ObjectId.prototype[objectIdSymbol] = true;
+
+module.exports = ObjectId;

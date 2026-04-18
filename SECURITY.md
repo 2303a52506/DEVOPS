@@ -1,5 +1,5 @@
-## Security contact information
+# Reporting a Vulnerability
 
-To report a security vulnerability, please use the
-[Tidelift security contact](https://tidelift.com/security).
-Tidelift will coordinate the fix and disclosure.
+Please report suspected security vulnerabilities to val [at] karpov [dot] io.
+You will receive a response from us within 72 hours.
+If the issue is confirmed, we will release a patch as soon as possible depending on complexity.
