@@ -1,136 +1,139 @@
-# object.assign <sup>[![Version Badge][npm-version-svg]][npm-url]</sup>
+# proxy-addr
 
-[![github actions][actions-image]][actions-url]
-[![coverage][codecov-image]][codecov-url]
-[![dependency status][deps-svg]][deps-url]
-[![dev dependency status][dev-deps-svg]][dev-deps-url]
-[![License][license-image]][license-url]
-[![Downloads][downloads-image]][downloads-url]
+[![NPM Version][npm-version-image]][npm-url]
+[![NPM Downloads][npm-downloads-image]][npm-url]
+[![Node.js Version][node-image]][node-url]
+[![Build Status][ci-image]][ci-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-[![npm badge][npm-badge-png]][npm-url]
+Determine address of proxied request
 
-An Object.assign shim. Invoke its "shim" method to shim Object.assign if it is unavailable.
+## Install
 
-This package implements the [es-shim API](https://github.com/es-shims/api) interface. It works in an ES3-supported environment and complies with the [spec](http://www.ecma-international.org/ecma-262/6.0/#sec-object.assign). In an ES6 environment, it will also work properly with `Symbol`s.
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/). Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-Takes a minimum of 2 arguments: `target` and `source`.
-Takes a variable sized list of source arguments - at least 1, as many as you want.
-Throws a TypeError if the `target` argument is `null` or `undefined`.
-
-Most common usage:
-```js
-var assign = require('object.assign').getPolyfill(); // returns native method if compliant
-	/* or */
-var assign = require('object.assign/polyfill')(); // returns native method if compliant
+```sh
+$ npm install proxy-addr
 ```
 
-## Example
+## API
 
 ```js
-var assert = require('assert');
-
-// Multiple sources!
-var target = { a: true };
-var source1 = { b: true };
-var source2 = { c: true };
-var sourceN = { n: true };
-
-var expected = {
-	a: true,
-	b: true,
-	c: true,
-	n: true
-};
-
-assign(target, source1, source2, sourceN);
-assert.deepEqual(target, expected); // AWESOME!
+var proxyaddr = require('proxy-addr')
 ```
+
+### proxyaddr(req, trust)
+
+Return the address of the request, using the given `trust` parameter.
+
+The `trust` argument is a function that returns `true` if you trust
+the address, `false` if you don't. The closest untrusted address is
+returned.
 
 ```js
-var target = {
-	a: true,
-	b: true,
-	c: true
-};
-var source1 = {
-	c: false,
-	d: false
-};
-var sourceN = {
-	e: false
-};
-
-var assigned = assign(target, source1, sourceN);
-assert.equal(target, assigned); // returns the target object
-assert.deepEqual(assigned, {
-	a: true,
-	b: true,
-	c: false,
-	d: false,
-	e: false
-});
+proxyaddr(req, function (addr) { return addr === '127.0.0.1' })
+proxyaddr(req, function (addr, i) { return i < 1 })
 ```
+
+The `trust` arugment may also be a single IP address string or an
+array of trusted addresses, as plain IP addresses, CIDR-formatted
+strings, or IP/netmask strings.
 
 ```js
-/* when Object.assign is not present */
-delete Object.assign;
-var shimmedAssign = require('object.assign').shim();
-	/* or */
-var shimmedAssign = require('object.assign/shim')();
-
-assert.equal(shimmedAssign, assign);
-
-var target = {
-	a: true,
-	b: true,
-	c: true
-};
-var source = {
-	c: false,
-	d: false,
-	e: false
-};
-
-var assigned = assign(target, source);
-assert.deepEqual(Object.assign(target, source), assign(target, source));
+proxyaddr(req, '127.0.0.1')
+proxyaddr(req, ['127.0.0.0/8', '10.0.0.0/8'])
+proxyaddr(req, ['127.0.0.0/255.0.0.0', '192.168.0.0/255.255.0.0'])
 ```
+
+This module also supports IPv6. Your IPv6 addresses will be normalized
+automatically (i.e. `fe80::00ed:1` equals `fe80:0:0:0:0:0:ed:1`).
 
 ```js
-/* when Object.assign is present */
-var shimmedAssign = require('object.assign').shim();
-assert.equal(shimmedAssign, Object.assign);
-
-var target = {
-	a: true,
-	b: true,
-	c: true
-};
-var source = {
-	c: false,
-	d: false,
-	e: false
-};
-
-assert.deepEqual(Object.assign(target, source), assign(target, source));
+proxyaddr(req, '::1')
+proxyaddr(req, ['::1/128', 'fe80::/10'])
 ```
 
-## Tests
-Simply clone the repo, `npm install`, and run `npm test`
+This module will automatically work with IPv4-mapped IPv6 addresses
+as well to support node.js in IPv6-only mode. This means that you do
+not have to specify both `::ffff:a00:1` and `10.0.0.1`.
 
-[npm-url]: https://npmjs.org/package/object.assign
-[npm-version-svg]: http://versionbadg.es/ljharb/object.assign.svg
-[travis-svg]: https://travis-ci.org/ljharb/object.assign.svg
-[travis-url]: https://travis-ci.org/ljharb/object.assign
-[deps-svg]: https://david-dm.org/ljharb/object.assign.svg?theme=shields.io
-[deps-url]: https://david-dm.org/ljharb/object.assign
-[dev-deps-svg]: https://david-dm.org/ljharb/object.assign/dev-status.svg?theme=shields.io
-[dev-deps-url]: https://david-dm.org/ljharb/object.assign#info=devDependencies
-[npm-badge-png]: https://nodei.co/npm/object.assign.png?downloads=true&stars=true
-[license-image]: http://img.shields.io/npm/l/object.assign.svg
-[license-url]: LICENSE
-[downloads-image]: http://img.shields.io/npm/dm/object.assign.svg
-[downloads-url]: http://npm-stat.com/charts.html?package=object.assign
-[codecov-image]: https://codecov.io/gh/ljharb/object.assign/branch/main/graphs/badge.svg
-[codecov-url]: https://app.codecov.io/gh/ljharb/object.assign/
-[actions-image]: https://img.shields.io/endpoint?url=https://github-actions-badge-u3jn4tfpocch.runkit.sh/ljharb/object.assign
-[actions-url]: https://github.com/ljharb/object.assign/actions
+As a convenience, this module also takes certain pre-defined names
+in addition to IP addresses, which expand into IP addresses:
+
+```js
+proxyaddr(req, 'loopback')
+proxyaddr(req, ['loopback', 'fc00:ac:1ab5:fff::1/64'])
+```
+
+  * `loopback`: IPv4 and IPv6 loopback addresses (like `::1` and
+    `127.0.0.1`).
+  * `linklocal`: IPv4 and IPv6 link-local addresses (like
+    `fe80::1:1:1:1` and `169.254.0.1`).
+  * `uniquelocal`: IPv4 private addresses and IPv6 unique-local
+    addresses (like `fc00:ac:1ab5:fff::1` and `192.168.0.1`).
+
+When `trust` is specified as a function, it will be called for each
+address to determine if it is a trusted address. The function is
+given two arguments: `addr` and `i`, where `addr` is a string of
+the address to check and `i` is a number that represents the distance
+from the socket address.
+
+### proxyaddr.all(req, [trust])
+
+Return all the addresses of the request, optionally stopping at the
+first untrusted. This array is ordered from closest to furthest
+(i.e. `arr[0] === req.connection.remoteAddress`).
+
+```js
+proxyaddr.all(req)
+```
+
+The optional `trust` argument takes the same arguments as `trust`
+does in `proxyaddr(req, trust)`.
+
+```js
+proxyaddr.all(req, 'loopback')
+```
+
+### proxyaddr.compile(val)
+
+Compiles argument `val` into a `trust` function. This function takes
+the same arguments as `trust` does in `proxyaddr(req, trust)` and
+returns a function suitable for `proxyaddr(req, trust)`.
+
+```js
+var trust = proxyaddr.compile('loopback')
+var addr = proxyaddr(req, trust)
+```
+
+This function is meant to be optimized for use against every request.
+It is recommend to compile a trust function up-front for the trusted
+configuration and pass that to `proxyaddr(req, trust)` for each request.
+
+## Testing
+
+```sh
+$ npm test
+```
+
+## Benchmarks
+
+```sh
+$ npm run-script bench
+```
+
+## License
+
+[MIT](LICENSE)
+
+[ci-image]: https://badgen.net/github/checks/jshttp/proxy-addr/master?label=ci
+[ci-url]: https://github.com/jshttp/proxy-addr/actions?query=workflow%3Aci
+[coveralls-image]: https://badgen.net/coveralls/c/github/jshttp/proxy-addr/master
+[coveralls-url]: https://coveralls.io/r/jshttp/proxy-addr?branch=master
+[node-image]: https://badgen.net/npm/node/proxy-addr
+[node-url]: https://nodejs.org/en/download
+[npm-downloads-image]: https://badgen.net/npm/dm/proxy-addr
+[npm-url]: https://npmjs.org/package/proxy-addr
+[npm-version-image]: https://badgen.net/npm/v/proxy-addr
