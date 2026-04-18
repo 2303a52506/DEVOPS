@@ -1,419 +1,113 @@
-# kareem
+# mime-types
 
-  [![Build Status](https://github.com/mongoosejs/kareem/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/mongoosejs/kareem/actions/workflows/test.yml)
-  <!--[![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)-->
+[![NPM Version][npm-version-image]][npm-url]
+[![NPM Downloads][npm-downloads-image]][npm-url]
+[![Node.js Version][node-version-image]][node-version-url]
+[![Build Status][ci-image]][ci-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
 
-Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
+The ultimate javascript content-type utility.
 
-Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)
+Similar to [the `mime@1.x` module](https://www.npmjs.com/package/mime), except:
 
-<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">
+- __No fallbacks.__ Instead of naively returning the first available type,
+  `mime-types` simply returns `false`, so do
+  `var type = mime.lookup('unrecognized') || 'application/octet-stream'`.
+- No `new Mime()` business, so you could do `var lookup = require('mime-types').lookup`.
+- No `.define()` functionality
+- Bug fixes for `.lookup(path)`
 
-# API
+Otherwise, the API is compatible with `mime` 1.x.
 
-## pre hooks
+## Install
 
-Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
-pre and post hooks: pre hooks are called before a given function executes.
-Unlike hooks, kareem stores hooks and other internal state in a separate
-object, rather than relying on inheritance. Furthermore, kareem exposes
-an `execPre()` function that allows you to execute your pre hooks when
-appropriate, giving you more fine-grained control over your function hooks.
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/). Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-
-#### It runs without any hooks specified
-
-```javascript
-hooks.execPre('cook', null, function() {
-  // ...
-});
+```sh
+$ npm install mime-types
 ```
 
-#### It runs basic serial pre hooks
+## Adding Types
 
-pre hook functions take one parameter, a "done" function that you execute
-when your pre hook is finished.
+All mime types are based on [mime-db](https://www.npmjs.com/package/mime-db),
+so open a PR there if you'd like to add mime types.
 
+## API
 
-```javascript
-var count = 0;
-
-hooks.pre('cook', function(done) {
-  ++count;
-  done();
-});
-
-hooks.execPre('cook', null, function() {
-  assert.equal(1, count);
-});
+```js
+var mime = require('mime-types')
 ```
 
-#### It can run multipe pre hooks
+All functions return `false` if input is invalid or not found.
 
-```javascript
-var count1 = 0;
-var count2 = 0;
+### mime.lookup(path)
 
-hooks.pre('cook', function(done) {
-  ++count1;
-  done();
-});
+Lookup the content-type associated with a file.
 
-hooks.pre('cook', function(done) {
-  ++count2;
-  done();
-});
+```js
+mime.lookup('json') // 'application/json'
+mime.lookup('.md') // 'text/markdown'
+mime.lookup('file.html') // 'text/html'
+mime.lookup('folder/file.js') // 'application/javascript'
+mime.lookup('folder/.htaccess') // false
 
-hooks.execPre('cook', null, function() {
-  assert.equal(1, count1);
-  assert.equal(1, count2);
-});
+mime.lookup('cats') // false
 ```
 
-#### It can run fully synchronous pre hooks
+### mime.contentType(type)
 
-If your pre hook function takes no parameters, its assumed to be
-fully synchronous.
+Create a full content-type header given a content-type or extension.
+When given an extension, `mime.lookup` is used to get the matching
+content-type, otherwise the given content-type is used. Then if the
+content-type does not already have a `charset` parameter, `mime.charset`
+is used to get the default charset and add to the returned content-type.
 
+```js
+mime.contentType('markdown') // 'text/x-markdown; charset=utf-8'
+mime.contentType('file.json') // 'application/json; charset=utf-8'
+mime.contentType('text/html') // 'text/html; charset=utf-8'
+mime.contentType('text/html; charset=iso-8859-1') // 'text/html; charset=iso-8859-1'
 
-```javascript
-var count1 = 0;
-var count2 = 0;
-
-hooks.pre('cook', function() {
-  ++count1;
-});
-
-hooks.pre('cook', function() {
-  ++count2;
-});
-
-hooks.execPre('cook', null, function(error) {
-  assert.equal(null, error);
-  assert.equal(1, count1);
-  assert.equal(1, count2);
-});
+// from a full path
+mime.contentType(path.extname('/path/to/file.json')) // 'application/json; charset=utf-8'
 ```
 
-#### It properly attaches context to pre hooks
+### mime.extension(type)
 
-Pre save hook functions are bound to the second parameter to `execPre()`
+Get the default extension for a content-type.
 
-
-```javascript
-hooks.pre('cook', function(done) {
-  this.bacon = 3;
-  done();
-});
-
-hooks.pre('cook', function(done) {
-  this.eggs = 4;
-  done();
-});
-
-var obj = { bacon: 0, eggs: 0 };
-
-// In the pre hooks, `this` will refer to `obj`
-hooks.execPre('cook', obj, function(error) {
-  assert.equal(null, error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-});
+```js
+mime.extension('application/octet-stream') // 'bin'
 ```
 
-#### It can execute parallel (async) pre hooks
+### mime.charset(type)
 
-Like the hooks module, you can declare "async" pre hooks - these take two
-parameters, the functions `next()` and `done()`. `next()` passes control to
-the next pre hook, but the underlying function won't be called until all
-async pre hooks have called `done()`.
+Lookup the implied default charset of a content-type.
 
-
-```javascript
-hooks.pre('cook', true, function(next, done) {
-  this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
-});
-
-hooks.pre('cook', true, function(next, done) {
-  next();
-  var _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
-});
-
-hooks.pre('cook', function(next) {
-  this.waffles = false;
-  next();
-});
-
-var obj = { bacon: 0, eggs: 0 };
-
-hooks.execPre('cook', obj, function() {
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-});
+```js
+mime.charset('text/markdown') // 'UTF-8'
 ```
 
-#### It supports returning a promise
+### var type = mime.types[extension]
 
-You can also return a promise from your pre hooks instead of calling
-`next()`. When the returned promise resolves, kareem will kick off the
-next middleware.
+A map of content-types by extension.
 
+### [extensions...] = mime.extensions[type]
 
-```javascript
-hooks.pre('cook', function() {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      this.bacon = 3;
-      resolve();
-    }, 100);
-  });
-});
+A map of extensions by content-type.
 
-var obj = { bacon: 0 };
+## License
 
-hooks.execPre('cook', obj, function() {
-  assert.equal(3, obj.bacon);
-});
-```
+[MIT](LICENSE)
 
-## post hooks
-
-acquit:ignore:end
-
-#### It runs without any hooks specified
-
-```javascript
-hooks.execPost('cook', null, [1], function(error, eggs) {
-  assert.ifError(error);
-  assert.equal(1, eggs);
-  done();
-});
-```
-
-#### It executes with parameters passed in
-
-```javascript
-hooks.post('cook', function(eggs, bacon, callback) {
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-  callback();
-});
-
-hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-  assert.ifError(error);
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-});
-```
-
-#### It can use synchronous post hooks
-
-```javascript
-var execed = {};
-
-hooks.post('cook', function(eggs, bacon) {
-  execed.first = true;
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-});
-
-hooks.post('cook', function(eggs, bacon, callback) {
-  execed.second = true;
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-  callback();
-});
-
-hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-  assert.ifError(error);
-  assert.equal(2, Object.keys(execed).length);
-  assert.ok(execed.first);
-  assert.ok(execed.second);
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-});
-```
-
-#### It supports returning a promise
-
-You can also return a promise from your post hooks instead of calling
-`next()`. When the returned promise resolves, kareem will kick off the
-next middleware.
-
-
-```javascript
-hooks.post('cook', function(bacon) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      this.bacon = 3;
-      resolve();
-    }, 100);
-  });
-});
-
-var obj = { bacon: 0 };
-
-hooks.execPost('cook', obj, obj, function() {
-  assert.equal(obj.bacon, 3);
-});
-```
-
-## wrap()
-
-acquit:ignore:end
-
-#### It wraps pre and post calls into one call
-
-```javascript
-hooks.pre('cook', true, function(next, done) {
-  this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
-});
-
-hooks.pre('cook', true, function(next, done) {
-  next();
-  var _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
-});
-
-hooks.pre('cook', function(next) {
-  this.waffles = false;
-  next();
-});
-
-hooks.post('cook', function(obj) {
-  obj.tofu = 'no';
-});
-
-var obj = { bacon: 0, eggs: 0 };
-
-var args = [obj];
-args.push(function(error, result) {
-  assert.ifError(error);
-  assert.equal(null, error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-  assert.equal('no', obj.tofu);
-
-  assert.equal(obj, result);
-});
-
-hooks.wrap(
-  'cook',
-  function(o, callback) {
-    assert.equal(3, obj.bacon);
-    assert.equal(4, obj.eggs);
-    assert.equal(false, obj.waffles);
-    assert.equal(undefined, obj.tofu);
-    callback(null, o);
-  },
-  obj,
-  args);
-```
-
-## createWrapper()
-
-#### It wraps wrap() into a callable function
-
-```javascript
-hooks.pre('cook', true, function(next, done) {
-  this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
-});
-
-hooks.pre('cook', true, function(next, done) {
-  next();
-  var _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
-});
-
-hooks.pre('cook', function(next) {
-  this.waffles = false;
-  next();
-});
-
-hooks.post('cook', function(obj) {
-  obj.tofu = 'no';
-});
-
-var obj = { bacon: 0, eggs: 0 };
-
-var cook = hooks.createWrapper(
-  'cook',
-  function(o, callback) {
-    assert.equal(3, obj.bacon);
-    assert.equal(4, obj.eggs);
-    assert.equal(false, obj.waffles);
-    assert.equal(undefined, obj.tofu);
-    callback(null, o);
-  },
-  obj);
-
-cook(obj, function(error, result) {
-  assert.ifError(error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-  assert.equal('no', obj.tofu);
-
-  assert.equal(obj, result);
-});
-```
-
-## clone()
-
-acquit:ignore:end
-
-#### It clones a Kareem object
-
-```javascript
-var k1 = new Kareem();
-k1.pre('cook', function() {});
-k1.post('cook', function() {});
-
-var k2 = k1.clone();
-assert.deepEqual(Array.from(k2._pres.keys()), ['cook']);
-assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
-```
-
-## merge()
-
-#### It pulls hooks from another Kareem object
-
-```javascript
-var k1 = new Kareem();
-var test1 = function() {};
-k1.pre('cook', test1);
-k1.post('cook', function() {});
-
-var k2 = new Kareem();
-var test2 = function() {};
-k2.pre('cook', test2);
-var k3 = k2.merge(k1);
-assert.equal(k3._pres.get('cook').length, 2);
-assert.equal(k3._pres.get('cook')[0].fn, test2);
-assert.equal(k3._pres.get('cook')[1].fn, test1);
-assert.equal(k3._posts.get('cook').length, 1);
-```
+[ci-image]: https://badgen.net/github/checks/jshttp/mime-types/master?label=ci
+[ci-url]: https://github.com/jshttp/mime-types/actions/workflows/ci.yml
+[coveralls-image]: https://badgen.net/coveralls/c/github/jshttp/mime-types/master
+[coveralls-url]: https://coveralls.io/r/jshttp/mime-types?branch=master
+[node-version-image]: https://badgen.net/npm/node/mime-types
+[node-version-url]: https://nodejs.org/en/download
+[npm-downloads-image]: https://badgen.net/npm/dm/mime-types
+[npm-url]: https://npmjs.org/package/mime-types
+[npm-version-image]: https://badgen.net/npm/v/mime-types
