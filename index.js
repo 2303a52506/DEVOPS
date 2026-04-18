@@ -1,47 +1,46 @@
 'use strict';
 
-var test = require('tape');
-// eslint-disable-next-line no-extra-parens
-var isArguments = /** @type {import('..') & { isLegacyArguments: import('..') }} */ (require('../'));
-var hasToStringTag = require('has-tostringtag/shams')();
+var $Map = typeof Map === 'function' && Map.prototype ? Map : null;
+var $Set = typeof Set === 'function' && Set.prototype ? Set : null;
 
-test('primitives', function (t) {
-	t.notOk(isArguments([]), 'array is not arguments');
-	t.notOk(isArguments({}), 'object is not arguments');
-	t.notOk(isArguments(''), 'empty string is not arguments');
-	t.notOk(isArguments('foo'), 'string is not arguments');
-	t.notOk(isArguments({ length: 2 }), 'naive array-like is not arguments');
-	t.end();
-});
+var exported;
 
-test('arguments object', function (t) {
-	t.ok(isArguments(arguments), 'arguments is arguments');
-	t.notOk(isArguments(Array.prototype.slice.call(arguments)), 'sliced arguments is not arguments');
-	t.end();
-});
-
-test('old-style arguments object', function (t) {
-	var isLegacyArguments = isArguments.isLegacyArguments || isArguments;
-	var fakeOldArguments = {
-		callee: function () {},
-		length: 3
+if (!$Set) {
+	/** @type {import('.')} */
+	// eslint-disable-next-line no-unused-vars
+	exported = function isSet(x) {
+		// `Set` is not present in this environment.
+		return false;
 	};
-	t.ok(isLegacyArguments(fakeOldArguments), 'old-style arguments is arguments');
-	t.end();
-});
+}
 
-test('Symbol.toStringTag', { skip: !hasToStringTag }, function (t) {
-	/** @type {{ [Symbol.toStringTag]?: string }} */
-	var obj = {};
-	obj[Symbol.toStringTag] = 'Arguments';
-	t.notOk(isArguments(obj), 'object with faked toStringTag is not arguments');
+var $mapHas = $Map ? Map.prototype.has : null;
+var $setHas = $Set ? Set.prototype.has : null;
+if (!exported && !$setHas) {
+	/** @type {import('.')} */
+	// eslint-disable-next-line no-unused-vars
+	exported = function isSet(x) {
+		// `Set` does not have a `has` method
+		return false;
+	};
+}
 
-	/** @type {IArguments & { [Symbol.toStringTag]?: string }} */
-	var args = (function () {
-		return arguments;
-	}());
-	args[Symbol.toStringTag] = 'Arguments';
-	t.notOk(isArguments(obj), 'real arguments with faked toStringTag is not arguments');
-
-	t.end();
-});
+/** @type {import('.')} */
+module.exports = exported || function isSet(x) {
+	if (!x || typeof x !== 'object') {
+		return false;
+	}
+	try {
+		$setHas.call(x);
+		if ($mapHas) {
+			try {
+				$mapHas.call(x);
+			} catch (e) {
+				return true;
+			}
+		}
+		// @ts-expect-error TS can't figure out that $Set is always truthy here
+		return x instanceof $Set; // core-js workaround, pre-v2.5.0
+	} catch (e) {}
+	return false;
+};
