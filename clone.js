@@ -1,257 +1,236 @@
-var clone = (function() {
 'use strict';
 
-function _instanceof(obj, type) {
-  return type != null && obj instanceof type;
-}
+const Decimal = require('../types/decimal128');
+const ObjectId = require('../types/objectid');
+const specialProperties = require('./specialProperties');
+const isMongooseObject = require('./isMongooseObject');
+const getFunctionName = require('./getFunctionName');
+const isBsonType = require('./isBsonType');
+const isMongooseArray = require('../types/array/isMongooseArray').isMongooseArray;
+const isObject = require('./isObject');
+const isPOJO = require('./isPOJO');
+const symbols = require('./symbols');
+const trustedSymbol = require('./query/trusted').trustedSymbol;
+const BSON = require('bson');
 
-var nativeMap;
-try {
-  nativeMap = Map;
-} catch(_) {
-  // maybe a reference error because no `Map`. Give it a dummy value that no
-  // value will ever be an instanceof.
-  nativeMap = function() {};
-}
-
-var nativeSet;
-try {
-  nativeSet = Set;
-} catch(_) {
-  nativeSet = function() {};
-}
-
-var nativePromise;
-try {
-  nativePromise = Promise;
-} catch(_) {
-  nativePromise = function() {};
-}
+const Binary = BSON.Binary;
+const UUID = BSON.UUID;
 
 /**
- * Clones (copies) an Object using deep copying.
+ * Object clone with Mongoose natives support.
  *
- * This function supports circular references by default, but if you are certain
- * there are no circular references in your object, you can save some CPU time
- * by calling clone(obj, false).
+ * If options.minimize is true, creates a minimal data object. Empty objects and undefined values will not be cloned. This makes the data payload sent to MongoDB as small as possible.
  *
- * Caution: if `circular` is false and `parent` contains circular references,
- * your program may enter an infinite loop and crash.
+ * Functions and primitives are never cloned.
  *
- * @param `parent` - the object to be cloned
- * @param `circular` - set to true if the object to be cloned may contain
- *    circular references. (optional - true by default)
- * @param `depth` - set to a number if the object is only to be cloned to
- *    a particular depth. (optional - defaults to Infinity)
- * @param `prototype` - sets the prototype to be used when cloning an object.
- *    (optional - defaults to parent prototype).
- * @param `includeNonEnumerable` - set to true if the non-enumerable properties
- *    should be cloned as well. Non-enumerable properties on the prototype
- *    chain will be ignored. (optional - false by default)
-*/
-function clone(parent, circular, depth, prototype, includeNonEnumerable) {
-  if (typeof circular === 'object') {
-    depth = circular.depth;
-    prototype = circular.prototype;
-    includeNonEnumerable = circular.includeNonEnumerable;
-    circular = circular.circular;
-  }
-  // maintain two arrays for circular references, where corresponding parents
-  // and children have the same index
-  var allParents = [];
-  var allChildren = [];
-
-  var useBuffer = typeof Buffer != 'undefined';
-
-  if (typeof circular == 'undefined')
-    circular = true;
-
-  if (typeof depth == 'undefined')
-    depth = Infinity;
-
-  // recurse this function so we don't reset allParents and allChildren
-  function _clone(parent, depth) {
-    // cloning null always returns null
-    if (parent === null)
-      return null;
-
-    if (depth === 0)
-      return parent;
-
-    var child;
-    var proto;
-    if (typeof parent != 'object') {
-      return parent;
-    }
-
-    if (_instanceof(parent, nativeMap)) {
-      child = new nativeMap();
-    } else if (_instanceof(parent, nativeSet)) {
-      child = new nativeSet();
-    } else if (_instanceof(parent, nativePromise)) {
-      child = new nativePromise(function (resolve, reject) {
-        parent.then(function(value) {
-          resolve(_clone(value, depth - 1));
-        }, function(err) {
-          reject(_clone(err, depth - 1));
-        });
-      });
-    } else if (clone.__isArray(parent)) {
-      child = [];
-    } else if (clone.__isRegExp(parent)) {
-      child = new RegExp(parent.source, __getRegExpFlags(parent));
-      if (parent.lastIndex) child.lastIndex = parent.lastIndex;
-    } else if (clone.__isDate(parent)) {
-      child = new Date(parent.getTime());
-    } else if (useBuffer && Buffer.isBuffer(parent)) {
-      if (Buffer.allocUnsafe) {
-        // Node.js >= 4.5.0
-        child = Buffer.allocUnsafe(parent.length);
-      } else {
-        // Older Node.js versions
-        child = new Buffer(parent.length);
-      }
-      parent.copy(child);
-      return child;
-    } else if (_instanceof(parent, Error)) {
-      child = Object.create(parent);
-    } else {
-      if (typeof prototype == 'undefined') {
-        proto = Object.getPrototypeOf(parent);
-        child = Object.create(proto);
-      }
-      else {
-        child = Object.create(prototype);
-        proto = prototype;
-      }
-    }
-
-    if (circular) {
-      var index = allParents.indexOf(parent);
-
-      if (index != -1) {
-        return allChildren[index];
-      }
-      allParents.push(parent);
-      allChildren.push(child);
-    }
-
-    if (_instanceof(parent, nativeMap)) {
-      parent.forEach(function(value, key) {
-        var keyChild = _clone(key, depth - 1);
-        var valueChild = _clone(value, depth - 1);
-        child.set(keyChild, valueChild);
-      });
-    }
-    if (_instanceof(parent, nativeSet)) {
-      parent.forEach(function(value) {
-        var entryChild = _clone(value, depth - 1);
-        child.add(entryChild);
-      });
-    }
-
-    for (var i in parent) {
-      var attrs;
-      if (proto) {
-        attrs = Object.getOwnPropertyDescriptor(proto, i);
-      }
-
-      if (attrs && attrs.set == null) {
-        continue;
-      }
-      child[i] = _clone(parent[i], depth - 1);
-    }
-
-    if (Object.getOwnPropertySymbols) {
-      var symbols = Object.getOwnPropertySymbols(parent);
-      for (var i = 0; i < symbols.length; i++) {
-        // Don't need to worry about cloning a symbol because it is a primitive,
-        // like a number or string.
-        var symbol = symbols[i];
-        var descriptor = Object.getOwnPropertyDescriptor(parent, symbol);
-        if (descriptor && !descriptor.enumerable && !includeNonEnumerable) {
-          continue;
-        }
-        child[symbol] = _clone(parent[symbol], depth - 1);
-        if (!descriptor.enumerable) {
-          Object.defineProperty(child, symbol, {
-            enumerable: false
-          });
-        }
-      }
-    }
-
-    if (includeNonEnumerable) {
-      var allPropertyNames = Object.getOwnPropertyNames(parent);
-      for (var i = 0; i < allPropertyNames.length; i++) {
-        var propertyName = allPropertyNames[i];
-        var descriptor = Object.getOwnPropertyDescriptor(parent, propertyName);
-        if (descriptor && descriptor.enumerable) {
-          continue;
-        }
-        child[propertyName] = _clone(parent[propertyName], depth - 1);
-        Object.defineProperty(child, propertyName, {
-          enumerable: false
-        });
-      }
-    }
-
-    return child;
-  }
-
-  return _clone(parent, depth);
-}
-
-/**
- * Simple flat clone using prototype, accepts only objects, usefull for property
- * override on FLAT configuration object (no nested props).
- *
- * USE WITH CAUTION! This may not behave as you wish if you do not know how this
- * works.
+ * @param {Object} obj the object to clone
+ * @param {Object} options
+ * @param {Boolean} isArrayChild true if cloning immediately underneath an array. Special case for minimize.
+ * @return {Object} the cloned object
+ * @api private
  */
-clone.clonePrototype = function clonePrototype(parent) {
-  if (parent === null)
-    return null;
 
-  var c = function () {};
-  c.prototype = parent;
-  return new c();
-};
+function clone(obj, options, isArrayChild) {
+  if (obj == null) {
+    return obj;
+  }
 
-// private utility functions
+  if (isBsonType(obj, 'Double')) {
+    return new BSON.Double(obj.value);
+  }
+  if (typeof obj === 'number' || typeof obj === 'string' || typeof obj === 'boolean' || typeof obj === 'bigint') {
+    return obj;
+  }
 
-function __objToStr(o) {
-  return Object.prototype.toString.call(o);
+  if (Array.isArray(obj)) {
+    return cloneArray(obj, options);
+  }
+
+  if (isMongooseObject(obj)) {
+    if (options) {
+      if (options.flattenUUIDs) {
+        if (obj instanceof Binary && obj._subtype === Binary.SUBTYPE_UUID) {
+          return obj.toString();
+        }
+        if (obj?.isMongooseBuffer && obj._subtype === Binary.SUBTYPE_UUID) {
+          return obj.toUUID().toString();
+        }
+      }
+      if (options.retainDocuments && obj.$__ != null) {
+        const clonedDoc = obj.$clone();
+        if (obj.__index != null) {
+          clonedDoc.__index = obj.__index;
+        }
+        if (obj.__parentArray != null) {
+          clonedDoc.__parentArray = options.parentArray ?? obj.__parentArray;
+        }
+        clonedDoc.$__setParent(options.parentDoc ?? obj.$__parent);
+        return clonedDoc;
+      }
+      if (options.retainDocuments && obj.$isMongooseMap) {
+        const clonedParent = options.parentDoc ?? obj.$__parent;
+        const MongooseMap = obj.constructor;
+        const ret = new MongooseMap({}, obj.$__path, clonedParent, obj.$__schemaType);
+        for (const [key, value] of obj) {
+          ret.$__set(key, clone(value, { ...options, parentDoc: clonedParent }));
+        }
+        return ret;
+      }
+    }
+
+    if (isPOJO(obj) && obj.$__ != null && obj._doc != null) {
+      return obj._doc;
+    }
+
+    let ret;
+    if (options && options.json && typeof obj.toJSON === 'function') {
+      ret = obj.toJSON(options);
+    } else {
+      ret = obj.toObject(options);
+    }
+
+    return ret;
+  }
+
+  const objConstructor = obj.constructor;
+
+  if (objConstructor) {
+    switch (getFunctionName(objConstructor)) {
+      case 'Object':
+        return cloneObject(obj, options, isArrayChild);
+      case 'Date':
+        return new objConstructor(+obj);
+      case 'RegExp':
+        return cloneRegExp(obj);
+      default:
+        // ignore
+        break;
+    }
+  }
+
+  if (isBsonType(obj, 'ObjectId')) {
+    if (options && options.flattenObjectIds) {
+      return obj.toJSON();
+    }
+    return new ObjectId(obj.id);
+  }
+
+  if (isBsonType(obj, 'Decimal128')) {
+    if (options && options.flattenDecimals) {
+      return obj.toJSON();
+    }
+    return Decimal.fromString(obj.toString());
+  }
+
+  if (obj instanceof UUID) {
+    if (options?.flattenUUIDs) {
+      return obj.toJSON();
+    }
+    return new UUID(obj.buffer);
+  }
+
+  // object created with Object.create(null)
+  if (!objConstructor && isObject(obj)) {
+    return cloneObject(obj, options, isArrayChild);
+  }
+
+  if (typeof obj === 'object' && obj[symbols.schemaTypeSymbol]) {
+    return obj.clone();
+  }
+
+  // If we're cloning this object to go into a MongoDB command,
+  // and there's a `toBSON()` function, assume this object will be
+  // stored as a primitive in MongoDB and doesn't need to be cloned.
+  if (options && options.bson && typeof obj.toBSON === 'function') {
+    return obj;
+  }
+
+  if (typeof obj.valueOf === 'function') {
+    return obj.valueOf();
+  }
+
+  return cloneObject(obj, options, isArrayChild);
 }
-clone.__objToStr = __objToStr;
+module.exports = clone;
 
-function __isDate(o) {
-  return typeof o === 'object' && __objToStr(o) === '[object Date]';
+/*!
+ * ignore
+ */
+
+function cloneObject(obj, options, isArrayChild) {
+  const minimize = options && options.minimize;
+  const omitUndefined = options && options.omitUndefined;
+  const seen = options && options._seen;
+  const ret = {};
+  let hasKeys;
+
+  if (seen && seen.has(obj)) {
+    return seen.get(obj);
+  } else if (seen) {
+    seen.set(obj, ret);
+  }
+  if (trustedSymbol in obj && options?.copyTrustedSymbol !== false) {
+    ret[trustedSymbol] = obj[trustedSymbol];
+  }
+
+  const keys = Object.keys(obj);
+  const len = keys.length;
+
+  for (let i = 0; i < len; ++i) {
+    const key = keys[i];
+    if (specialProperties.has(key)) {
+      continue;
+    }
+
+    // Don't pass `isArrayChild` down
+    const val = clone(obj[key], options, false);
+
+    if ((minimize === false || omitUndefined) && typeof val === 'undefined') {
+      delete ret[key];
+    } else if (minimize !== true || (typeof val !== 'undefined')) {
+      hasKeys || (hasKeys = true);
+      ret[key] = val;
+    }
+  }
+
+  return minimize && !isArrayChild ? hasKeys && ret : ret;
 }
-clone.__isDate = __isDate;
 
-function __isArray(o) {
-  return typeof o === 'object' && __objToStr(o) === '[object Array]';
+function cloneArray(arr, options) {
+  let i = 0;
+  const len = arr.length;
+
+  let ret = null;
+  if (options?.retainDocuments) {
+    if (arr.isMongooseDocumentArray) {
+      ret = new (arr.$schemaType().schema.base.Types.DocumentArray)([], arr.$path(), arr.$parent(), arr.$schemaType());
+    } else if (arr.isMongooseArray) {
+      ret = new (arr.$parent().schema.base.Types.Array)([], arr.$path(), arr.$parent(), arr.$schemaType());
+    } else {
+      ret = new Array(len);
+    }
+  } else {
+    ret = new Array(len);
+  }
+
+  arr = isMongooseArray(arr) ? arr.__array : arr;
+  if (ret.isMongooseDocumentArray) {
+    // Create new options object to avoid mutating the shared options.
+    // Subdocs need parentArray to point to their own cloned array.
+    options = { ...options, parentArray: ret };
+  }
+  for (i = 0; i < len; ++i) {
+    ret[i] = clone(arr[i], options, true);
+  }
+
+  return ret;
 }
-clone.__isArray = __isArray;
 
-function __isRegExp(o) {
-  return typeof o === 'object' && __objToStr(o) === '[object RegExp]';
-}
-clone.__isRegExp = __isRegExp;
+function cloneRegExp(regexp) {
+  const ret = new RegExp(regexp.source, regexp.flags);
 
-function __getRegExpFlags(re) {
-  var flags = '';
-  if (re.global) flags += 'g';
-  if (re.ignoreCase) flags += 'i';
-  if (re.multiline) flags += 'm';
-  return flags;
-}
-clone.__getRegExpFlags = __getRegExpFlags;
-
-return clone;
-})();
-
-if (typeof module === 'object' && module.exports) {
-  module.exports = clone;
+  if (ret.lastIndex !== regexp.lastIndex) {
+    ret.lastIndex = regexp.lastIndex;
+  }
+  return ret;
 }
