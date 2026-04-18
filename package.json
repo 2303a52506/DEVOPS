@@ -1,34 +1,39 @@
 {
-    "name": "@swc/helpers",
-    "version": "0.3.17",
-    "description": "External helpers for the swc project.",
-    "esnext": "src/index.js",
-    "module": "src/index.js",
-    "main": "lib/index.js",
-    "sideEffects": false,
-    "scripts": {
-        "build": "swc -V && swc src -d lib",
-        "prepublishOnly": "swc src -d lib"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/swc-project/swc.git"
-    },
-    "keywords": [
-        "swc",
-        "helpers"
-    ],
-    "author": "강동윤 <kdy1997.dev@gmail.com>",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/swc-project/swc/issues"
-    },
-    "homepage": "https://swc.rs",
-    "devDependencies": {
-        "@swc/cli": "^0.1.36",
-        "@swc/core": "^1.2.196"
-    },
-    "dependencies": {
-        "tslib": "^2.4.0"
-    }
+  "name": "array-flatten",
+  "version": "1.1.1",
+  "description": "Flatten an array of nested arrays into a single flat array",
+  "main": "array-flatten.js",
+  "files": [
+    "array-flatten.js",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "istanbul cover _mocha -- -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/blakeembrey/array-flatten.git"
+  },
+  "keywords": [
+    "array",
+    "flatten",
+    "arguments",
+    "depth"
+  ],
+  "author": {
+    "name": "Blake Embrey",
+    "email": "hello@blakeembrey.com",
+    "url": "http://blakeembrey.me"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/blakeembrey/array-flatten/issues"
+  },
+  "homepage": "https://github.com/blakeembrey/array-flatten",
+  "devDependencies": {
+    "istanbul": "^0.3.13",
+    "mocha": "^2.2.4",
+    "pre-commit": "^1.0.7",
+    "standard": "^3.7.3"
+  }
 }
