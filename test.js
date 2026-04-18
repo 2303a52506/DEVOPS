@@ -1,60 +1,79 @@
-/**
- * Usage: node test.js
- */
+var alloc = require('buffer-alloc')
+var tape = require('tape')
+var bitfield = require('./')
 
-var mime = require('../mime');
-var assert = require('assert');
-var path = require('path');
+tape('set and get', function (t) {
+  var bits = bitfield()
 
-//
-// Test mime lookups
-//
+  t.same(bits.get(0), false, 'first bit is false')
+  bits.set(0, true)
+  t.same(bits.get(0), true, 'first bit is true')
+  t.same(bits.get(1), false, 'second bit is false')
+  bits.set(0, false)
+  t.same(bits.get(0), false, 'first bit is reset')
+  t.end()
+})
 
-assert.equal('text/plain', mime.lookup('text.txt'));     // normal file
-assert.equal('text/plain', mime.lookup('TEXT.TXT'));     // uppercase
-assert.equal('text/plain', mime.lookup('dir/text.txt')); // dir + file
-assert.equal('text/plain', mime.lookup('.text.txt'));    // hidden file
-assert.equal('text/plain', mime.lookup('.txt'));         // nameless
-assert.equal('text/plain', mime.lookup('txt'));          // extension-only
-assert.equal('text/plain', mime.lookup('/txt'));         // extension-less ()
-assert.equal('text/plain', mime.lookup('\\txt'));        // Windows, extension-less
-assert.equal('application/octet-stream', mime.lookup('text.nope')); // unrecognized
-assert.equal('fallback', mime.lookup('text.fallback', 'fallback')); // alternate default
+tape('set large and get', function (t) {
+  var bits = bitfield()
 
-//
-// Test extensions
-//
+  t.same(bits.get(9999999999999), false, 'large bit is false')
+  bits.set(9999999999999, true)
+  t.same(bits.get(9999999999999), true, 'large bit is true')
+  t.same(bits.get(9999999999999 + 1), false, 'large bit + 1 is false')
+  bits.set(9999999999999, false)
+  t.same(bits.get(9999999999999), false, 'large bit is reset')
+  t.end()
+})
 
-assert.equal('txt', mime.extension(mime.types.text));
-assert.equal('html', mime.extension(mime.types.htm));
-assert.equal('bin', mime.extension('application/octet-stream'));
-assert.equal('bin', mime.extension('application/octet-stream '));
-assert.equal('html', mime.extension(' text/html; charset=UTF-8'));
-assert.equal('html', mime.extension('text/html; charset=UTF-8 '));
-assert.equal('html', mime.extension('text/html; charset=UTF-8'));
-assert.equal('html', mime.extension('text/html ; charset=UTF-8'));
-assert.equal('html', mime.extension('text/html;charset=UTF-8'));
-assert.equal('html', mime.extension('text/Html;charset=UTF-8'));
-assert.equal(undefined, mime.extension('unrecognized'));
+tape('get and set buffer', function (t) {
+  var bits = bitfield({trackUpdates: true})
 
-//
-// Test node.types lookups
-//
+  t.same(bits.pages.get(0, true), undefined)
+  t.same(bits.pages.get(Math.floor(9999999999999 / 8 / 1024), true), undefined)
+  bits.set(9999999999999, true)
 
-assert.equal('font/woff', mime.lookup('file.woff'));
-assert.equal('application/octet-stream', mime.lookup('file.buffer'));
-// TODO: Uncomment once #157 is resolved
-// assert.equal('audio/mp4', mime.lookup('file.m4a'));
-assert.equal('font/otf', mime.lookup('file.otf'));
+  var bits2 = bitfield()
+  var upd = bits.pages.lastUpdate()
+  bits2.pages.set(Math.floor(upd.offset / 1024), upd.buffer)
+  t.same(bits2.get(9999999999999), true, 'bit is set')
+  t.end()
+})
 
-//
-// Test charsets
-//
+tape('toBuffer', function (t) {
+  var bits = bitfield()
 
-assert.equal('UTF-8', mime.charsets.lookup('text/plain'));
-assert.equal('UTF-8', mime.charsets.lookup(mime.types.js));
-assert.equal('UTF-8', mime.charsets.lookup(mime.types.json));
-assert.equal(undefined, mime.charsets.lookup(mime.types.bin));
-assert.equal('fallback', mime.charsets.lookup('application/octet-stream', 'fallback'));
+  t.same(bits.toBuffer(), alloc(0))
 
-console.log('\nAll tests passed');
+  bits.set(0, true)
+
+  t.same(bits.toBuffer(), bits.pages.get(0).buffer)
+
+  bits.set(9000, true)
+
+  t.same(bits.toBuffer(), Buffer.concat([bits.pages.get(0).buffer, bits.pages.get(1).buffer]))
+  t.end()
+})
+
+tape('pass in buffer', function (t) {
+  var bits = bitfield()
+
+  bits.set(0, true)
+  bits.set(9000, true)
+
+  var clone = bitfield(bits.toBuffer())
+
+  t.same(clone.get(0), true)
+  t.same(clone.get(9000), true)
+  t.end()
+})
+
+tape('set small buffer', function (t) {
+  var buf = alloc(1)
+  buf[0] = 255
+  var bits = bitfield(buf)
+
+  t.same(bits.get(0), true)
+  t.same(bits.pages.get(0).buffer.length, bits.pageSize)
+  t.end()
+})

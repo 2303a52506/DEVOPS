@@ -1,34 +1,27 @@
 {
-  "name": "safer-buffer",
-  "version": "2.1.2",
-  "description": "Modern Buffer API polyfill without footguns",
-  "main": "safer.js",
-  "scripts": {
-    "browserify-test": "browserify --external tape tests.js > browserify-tests.js && tape browserify-tests.js",
-    "test": "standard && tape tests.js"
-  },
-  "author": {
-    "name": "Nikita Skovoroda",
-    "email": "chalkerx@gmail.com",
-    "url": "https://github.com/ChALkeR"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ChALkeR/safer-buffer.git"
-  },
-  "bugs": {
-    "url": "https://github.com/ChALkeR/safer-buffer/issues"
+  "name": "sparse-bitfield",
+  "version": "3.0.3",
+  "description": "Bitfield that allocates a series of small buffers to support sparse bits without allocating a massive buffer",
+  "main": "index.js",
+  "dependencies": {
+    "memory-pager": "^1.0.2"
   },
   "devDependencies": {
-    "standard": "^11.0.1",
-    "tape": "^4.9.0"
+    "buffer-alloc": "^1.1.0",
+    "standard": "^9.0.0",
+    "tape": "^4.6.3"
   },
-  "files": [
-    "Porting-Buffer.md",
-    "Readme.md",
-    "tests.js",
-    "dangerous.js",
-    "safer.js"
-  ]
+  "scripts": {
+    "test": "standard && tape test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/sparse-bitfield.git"
+  },
+  "author": "Mathias Buus (@mafintosh)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/sparse-bitfield/issues"
+  },
+  "homepage": "https://github.com/mafintosh/sparse-bitfield"
 }

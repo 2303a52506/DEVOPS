@@ -1,65 +1,95 @@
-/*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
-/* eslint-disable node/no-deprecated-api */
-var buffer = require('buffer')
-var Buffer = buffer.Buffer
+var pager = require('memory-pager')
 
-// alternative to using Object.keys for old browsers
-function copyProps (src, dst) {
-  for (var key in src) {
-    dst[key] = src[key]
-  }
-}
-if (Buffer.from && Buffer.alloc && Buffer.allocUnsafe && Buffer.allocUnsafeSlow) {
-  module.exports = buffer
-} else {
-  // Copy properties from require('buffer')
-  copyProps(buffer, exports)
-  exports.Buffer = SafeBuffer
-}
+module.exports = Bitfield
 
-function SafeBuffer (arg, encodingOrOffset, length) {
-  return Buffer(arg, encodingOrOffset, length)
-}
+function Bitfield (opts) {
+  if (!(this instanceof Bitfield)) return new Bitfield(opts)
+  if (!opts) opts = {}
+  if (Buffer.isBuffer(opts)) opts = {buffer: opts}
 
-SafeBuffer.prototype = Object.create(Buffer.prototype)
+  this.pageOffset = opts.pageOffset || 0
+  this.pageSize = opts.pageSize || 1024
+  this.pages = opts.pages || pager(this.pageSize)
 
-// Copy static methods from Buffer
-copyProps(Buffer, SafeBuffer)
+  this.byteLength = this.pages.length * this.pageSize
+  this.length = 8 * this.byteLength
 
-SafeBuffer.from = function (arg, encodingOrOffset, length) {
-  if (typeof arg === 'number') {
-    throw new TypeError('Argument must not be a number')
-  }
-  return Buffer(arg, encodingOrOffset, length)
-}
+  if (!powerOfTwo(this.pageSize)) throw new Error('The page size should be a power of two')
 
-SafeBuffer.alloc = function (size, fill, encoding) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  var buf = Buffer(size)
-  if (fill !== undefined) {
-    if (typeof encoding === 'string') {
-      buf.fill(fill, encoding)
-    } else {
-      buf.fill(fill)
+  this._trackUpdates = !!opts.trackUpdates
+  this._pageMask = this.pageSize - 1
+
+  if (opts.buffer) {
+    for (var i = 0; i < opts.buffer.length; i += this.pageSize) {
+      this.pages.set(i / this.pageSize, opts.buffer.slice(i, i + this.pageSize))
     }
-  } else {
-    buf.fill(0)
+    this.byteLength = opts.buffer.length
+    this.length = 8 * this.byteLength
   }
-  return buf
 }
 
-SafeBuffer.allocUnsafe = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
-  }
-  return Buffer(size)
+Bitfield.prototype.get = function (i) {
+  var o = i & 7
+  var j = (i - o) / 8
+
+  return !!(this.getByte(j) & (128 >> o))
 }
 
-SafeBuffer.allocUnsafeSlow = function (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('Argument must be a number')
+Bitfield.prototype.getByte = function (i) {
+  var o = i & this._pageMask
+  var j = (i - o) / this.pageSize
+  var page = this.pages.get(j, true)
+
+  return page ? page.buffer[o + this.pageOffset] : 0
+}
+
+Bitfield.prototype.set = function (i, v) {
+  var o = i & 7
+  var j = (i - o) / 8
+  var b = this.getByte(j)
+
+  return this.setByte(j, v ? b | (128 >> o) : b & (255 ^ (128 >> o)))
+}
+
+Bitfield.prototype.toBuffer = function () {
+  var all = alloc(this.pages.length * this.pageSize)
+
+  for (var i = 0; i < this.pages.length; i++) {
+    var next = this.pages.get(i, true)
+    var allOffset = i * this.pageSize
+    if (next) next.buffer.copy(all, allOffset, this.pageOffset, this.pageOffset + this.pageSize)
   }
-  return buffer.SlowBuffer(size)
+
+  return all
+}
+
+Bitfield.prototype.setByte = function (i, b) {
+  var o = i & this._pageMask
+  var j = (i - o) / this.pageSize
+  var page = this.pages.get(j, false)
+
+  o += this.pageOffset
+
+  if (page.buffer[o] === b) return false
+  page.buffer[o] = b
+
+  if (i >= this.byteLength) {
+    this.byteLength = i + 1
+    this.length = this.byteLength * 8
+  }
+
+  if (this._trackUpdates) this.pages.updated(page)
+
+  return true
+}
+
+function alloc (n) {
+  if (Buffer.alloc) return Buffer.alloc(n)
+  var b = new Buffer(n)
+  b.fill(0)
+  return b
+}
+
+function powerOfTwo (x) {
+  return !(x & (x - 1))
 }

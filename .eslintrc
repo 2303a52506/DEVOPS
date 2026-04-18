@@ -4,17 +4,9 @@
 	"extends": "@ljharb",
 
 	"rules": {
-		"eqeqeq": [2, "allow-null"],
 		"id-length": 0,
-		"no-invalid-this": "off",
+		"max-lines-per-function": 0,
+		"multiline-comment-style": 1,
+		"new-cap": [2, { "capIsNewExceptions": ["GetIntrinsic"] }],
 	},
-
-	"overrides": [
-		{
-			"files": "test/**",
-			"rules": {
-				"max-lines-per-function": 0,
-			},
-		},
-	],
 }
