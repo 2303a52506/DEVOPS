@@ -1,164 +1,237 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GridFSBucket = void 0;
-const error_1 = require("../error");
-const mongo_types_1 = require("../mongo_types");
-const timeout_1 = require("../timeout");
-const utils_1 = require("../utils");
-const write_concern_1 = require("../write_concern");
-const download_1 = require("./download");
-const upload_1 = require("./upload");
-const DEFAULT_GRIDFS_BUCKET_OPTIONS = {
-    bucketName: 'fs',
-    chunkSizeBytes: 255 * 1024
-};
+'use strict';
+
 /**
- * Constructor for a streaming GridFS interface
- * @public
+ * MongooseError constructor. MongooseError is the base class for all
+ * Mongoose-specific errors.
+ *
+ * #### Example:
+ *
+ *     const Model = mongoose.model('Test', new mongoose.Schema({ answer: Number }));
+ *     const doc = new Model({ answer: 'not a number' });
+ *     const err = doc.validateSync();
+ *
+ *     err instanceof mongoose.Error.ValidationError; // true
+ *
+ * @constructor Error
+ * @param {String} msg Error message
+ * @inherits Error https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Error
  */
-class GridFSBucket extends mongo_types_1.TypedEventEmitter {
-    /**
-     * When the first call to openUploadStream is made, the upload stream will
-     * check to see if it needs to create the proper indexes on the chunks and
-     * files collections. This event is fired either when 1) it determines that
-     * no index creation is necessary, 2) when it successfully creates the
-     * necessary indexes.
-     * @event
-     */
-    static { this.INDEX = 'index'; }
-    constructor(db, options) {
-        super();
-        this.on('error', utils_1.noop);
-        this.setMaxListeners(0);
-        const privateOptions = (0, utils_1.resolveOptions)(db, {
-            ...DEFAULT_GRIDFS_BUCKET_OPTIONS,
-            ...options,
-            writeConcern: write_concern_1.WriteConcern.fromOptions(options)
-        });
-        this.s = {
-            db,
-            options: privateOptions,
-            _chunksCollection: db.collection(privateOptions.bucketName + '.chunks'),
-            _filesCollection: db.collection(privateOptions.bucketName + '.files'),
-            checkedIndexes: false,
-            calledOpenUploadStream: false
-        };
-    }
-    /**
-     * Returns a writable stream (GridFSBucketWriteStream) for writing
-     * buffers to GridFS. The stream's 'id' property contains the resulting
-     * file's id.
-     *
-     * @param filename - The value of the 'filename' key in the files doc
-     * @param options - Optional settings.
-     */
-    openUploadStream(filename, options) {
-        return new upload_1.GridFSBucketWriteStream(this, filename, {
-            timeoutMS: this.s.options.timeoutMS,
-            ...options
-        });
-    }
-    /**
-     * Returns a writable stream (GridFSBucketWriteStream) for writing
-     * buffers to GridFS for a custom file id. The stream's 'id' property contains the resulting
-     * file's id.
-     */
-    openUploadStreamWithId(id, filename, options) {
-        return new upload_1.GridFSBucketWriteStream(this, filename, {
-            timeoutMS: this.s.options.timeoutMS,
-            ...options,
-            id
-        });
-    }
-    /** Returns a readable stream (GridFSBucketReadStream) for streaming file data from GridFS. */
-    openDownloadStream(id, options) {
-        return new download_1.GridFSBucketReadStream(this.s._chunksCollection, this.s._filesCollection, this.s.options.readPreference, { _id: id }, { timeoutMS: this.s.options.timeoutMS, ...options });
-    }
-    /**
-     * Deletes a file with the given id
-     *
-     * @param id - The id of the file doc
-     */
-    async delete(id, options) {
-        const { timeoutMS } = (0, utils_1.resolveOptions)(this.s.db, options);
-        let timeoutContext = undefined;
-        if (timeoutMS) {
-            timeoutContext = new timeout_1.CSOTTimeoutContext({
-                timeoutMS,
-                serverSelectionTimeoutMS: this.s.db.client.s.options.serverSelectionTimeoutMS
-            });
-        }
-        const { deletedCount } = await this.s._filesCollection.deleteOne({ _id: id }, { timeoutMS: timeoutContext?.remainingTimeMS });
-        const remainingTimeMS = timeoutContext?.remainingTimeMS;
-        if (remainingTimeMS != null && remainingTimeMS <= 0)
-            throw new error_1.MongoOperationTimeoutError(`Timed out after ${timeoutMS}ms`);
-        // Delete orphaned chunks before returning FileNotFound
-        await this.s._chunksCollection.deleteMany({ files_id: id }, { timeoutMS: remainingTimeMS });
-        if (deletedCount === 0) {
-            // TODO(NODE-3483): Replace with more appropriate error
-            // Consider creating new error MongoGridFSFileNotFoundError
-            throw new error_1.MongoRuntimeError(`File not found for id ${id}`);
-        }
-    }
-    /** Convenience wrapper around find on the files collection */
-    find(filter = {}, options = {}) {
-        return this.s._filesCollection.find(filter, options);
-    }
-    /**
-     * Returns a readable stream (GridFSBucketReadStream) for streaming the
-     * file with the given name from GridFS. If there are multiple files with
-     * the same name, this will stream the most recent file with the given name
-     * (as determined by the `uploadDate` field). You can set the `revision`
-     * option to change this behavior.
-     */
-    openDownloadStreamByName(filename, options) {
-        let sort = { uploadDate: -1 };
-        let skip = undefined;
-        if (options && options.revision != null) {
-            if (options.revision >= 0) {
-                sort = { uploadDate: 1 };
-                skip = options.revision;
-            }
-            else {
-                skip = -options.revision - 1;
-            }
-        }
-        return new download_1.GridFSBucketReadStream(this.s._chunksCollection, this.s._filesCollection, this.s.options.readPreference, { filename }, { timeoutMS: this.s.options.timeoutMS, ...options, sort, skip });
-    }
-    /**
-     * Renames the file with the given _id to the given string
-     *
-     * @param id - the id of the file to rename
-     * @param filename - new name for the file
-     */
-    async rename(id, filename, options) {
-        const filter = { _id: id };
-        const update = { $set: { filename } };
-        const { matchedCount } = await this.s._filesCollection.updateOne(filter, update, options);
-        if (matchedCount === 0) {
-            throw new error_1.MongoRuntimeError(`File with id ${id} not found`);
-        }
-    }
-    /** Removes this bucket's files collection, followed by its chunks collection. */
-    async drop(options) {
-        const { timeoutMS } = (0, utils_1.resolveOptions)(this.s.db, options);
-        let timeoutContext = undefined;
-        if (timeoutMS) {
-            timeoutContext = new timeout_1.CSOTTimeoutContext({
-                timeoutMS,
-                serverSelectionTimeoutMS: this.s.db.client.s.options.serverSelectionTimeoutMS
-            });
-        }
-        if (timeoutContext) {
-            await this.s._filesCollection.drop({ timeoutMS: timeoutContext.remainingTimeMS });
-            const remainingTimeMS = timeoutContext.getRemainingTimeMSOrThrow(`Timed out after ${timeoutMS}ms`);
-            await this.s._chunksCollection.drop({ timeoutMS: remainingTimeMS });
-        }
-        else {
-            await this.s._filesCollection.drop();
-            await this.s._chunksCollection.drop();
-        }
-    }
-}
-exports.GridFSBucket = GridFSBucket;
-//# sourceMappingURL=index.js.map
+
+const MongooseError = require('./mongooseError');
+
+/**
+ * The name of the error. The name uniquely identifies this Mongoose error. The
+ * possible values are:
+ *
+ * - `MongooseError`: general Mongoose error
+ * - `CastError`: Mongoose could not convert a value to the type defined in the schema path. May be in a `ValidationError` class' `errors` property.
+ * - `DivergentArrayError`: You attempted to `save()` an array that was modified after you loaded it with a `$elemMatch` or similar projection
+ * - `MissingSchemaError`: You tried to access a model with [`mongoose.model()`](https://mongoosejs.com/docs/api/mongoose.html#Mongoose.model()) that was not defined
+ * - `DocumentNotFoundError`: The document you tried to [`save()`](https://mongoosejs.com/docs/api/document.html#Document.prototype.save()) was not found
+ * - `ValidatorError`: error from an individual schema path's validator
+ * - `ValidationError`: error returned from [`validate()`](https://mongoosejs.com/docs/api/document.html#Document.prototype.validate()) or [`validateSync()`](https://mongoosejs.com/docs/api/document.html#Document.prototype.validateSync()). Contains zero or more `ValidatorError` instances in `.errors` property.
+ * - `MissingSchemaError`: You called `mongoose.Document()` without a schema
+ * - `ObjectExpectedError`: Thrown when you set a nested path to a non-object value with [strict mode set](https://mongoosejs.com/docs/guide.html#strict).
+ * - `ObjectParameterError`: Thrown when you pass a non-object value to a function which expects an object as a paramter
+ * - `OverwriteModelError`: Thrown when you call [`mongoose.model()`](https://mongoosejs.com/docs/api/mongoose.html#Mongoose.model()) to re-define a model that was already defined.
+ * - `ParallelSaveError`: Thrown when you call [`save()`](https://mongoosejs.com/docs/api/model.html#Model.prototype.save()) on a document when the same document instance is already saving.
+ * - `StrictModeError`: Thrown when you set a path that isn't the schema and [strict mode](https://mongoosejs.com/docs/guide.html#strict) is set to `throw`.
+ * - `VersionError`: Thrown when the [document is out of sync](https://mongoosejs.com/docs/guide.html#versionKey)
+ *
+ * @api public
+ * @property {String} name
+ * @memberOf Error
+ * @instance
+ */
+
+/*!
+ * Module exports.
+ */
+
+module.exports = exports = MongooseError;
+
+/**
+ * The default built-in validator error messages.
+ *
+ * @see Error.messages https://mongoosejs.com/docs/api/error.html#Error.messages
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.messages = require('./messages');
+
+// backward compat
+MongooseError.Messages = MongooseError.messages;
+
+/**
+ * An instance of this error class will be thrown when mongoose failed to
+ * cast a value.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.CastError = require('./cast');
+
+/**
+ * An instance of this error class will be thrown when `save()` fails
+ * because the underlying
+ * document was not found. The constructor takes one parameter, the
+ * conditions that mongoose passed to `updateOne()` when trying to update
+ * the document.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.DocumentNotFoundError = require('./notFound');
+
+/**
+ * An instance of this error class will be thrown when [validation](https://mongoosejs.com/docs/validation.html) failed.
+ * The `errors` property contains an object whose keys are the paths that failed and whose values are
+ * instances of CastError or ValidationError.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.ValidationError = require('./validation');
+
+/**
+ * A `ValidationError` has a hash of `errors` that contain individual
+ * `ValidatorError` instances.
+ *
+ * #### Example:
+ *
+ *     const schema = Schema({ name: { type: String, required: true } });
+ *     const Model = mongoose.model('Test', schema);
+ *     const doc = new Model({});
+ *
+ *     // Top-level error is a ValidationError, **not** a ValidatorError
+ *     const err = doc.validateSync();
+ *     err instanceof mongoose.Error.ValidationError; // true
+ *
+ *     // A ValidationError `err` has 0 or more ValidatorErrors keyed by the
+ *     // path in the `err.errors` property.
+ *     err.errors['name'] instanceof mongoose.Error.ValidatorError;
+ *
+ *     err.errors['name'].kind; // 'required'
+ *     err.errors['name'].path; // 'name'
+ *     err.errors['name'].value; // undefined
+ *
+ * Instances of `ValidatorError` have the following properties:
+ *
+ * - `kind`: The validator's `type`, like `'required'` or `'regexp'`
+ * - `path`: The path that failed validation
+ * - `value`: The value that failed validation
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.ValidatorError = require('./validator');
+
+/**
+ * An instance of this error class will be thrown when you call `save()` after
+ * the document in the database was changed in a potentially unsafe way. See
+ * the [`versionKey` option](https://mongoosejs.com/docs/guide.html#versionKey) for more information.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.VersionError = require('./version');
+
+/**
+ * An instance of this error class will be thrown when you call `save()` multiple
+ * times on the same document in parallel. See the [FAQ](https://mongoosejs.com/docs/faq.html) for more
+ * information.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.ParallelSaveError = require('./parallelSave');
+
+/**
+ * Thrown when a model with the given name was already registered on the connection.
+ * See [the FAQ about `OverwriteModelError`](https://mongoosejs.com/docs/faq.html#overwrite-model-error).
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.OverwriteModelError = require('./overwriteModel');
+
+/**
+ * Thrown when you try to access a model that has not been registered yet
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.MissingSchemaError = require('./missingSchema');
+
+/**
+ * Thrown when some documents failed to save when calling `bulkSave()`
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.MongooseBulkSaveIncompleteError = require('./bulkSaveIncompleteError');
+
+/**
+ * Thrown when the MongoDB Node driver can't connect to a valid server
+ * to send an operation to.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.MongooseServerSelectionError = require('./serverSelection');
+
+/**
+ * An instance of this error will be thrown if you used an array projection
+ * and then modified the array in an unsafe way.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.DivergentArrayError = require('./divergentArray');
+
+/**
+ * Thrown when your try to pass values to model constructor that
+ * were not specified in schema or change immutable properties when
+ * `strict` mode is `"throw"`
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.StrictModeError = require('./strict');
+
+/**
+ * An instance of this error class will be returned when mongoose failed to
+ * populate with a path that is not existing.
+ *
+ * @api public
+ * @memberOf Error
+ * @static
+ */
+
+MongooseError.StrictPopulateError = require('./strictPopulate');
